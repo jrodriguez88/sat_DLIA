@@ -198,7 +198,7 @@ paleta_clc <- c(
   "Bosque abierto bajo"                       = "#4DFF00",  # CLC 313 (77,255,0) :contentReference[oaicite:4]{index=4}
   "Bosque de galeria y ripario"               = "#80FF00",  # CLC 311 (128,255,0) :contentReference[oaicite:5]{index=5}
   "Bosque fragmentado con pastos y cultivos"  = "#4DFF00",  # CLC 313 (77,255,0) :contentReference[oaicite:6]{index=6}
-  "Bosque fragmentado con vegetación secundaria" = "#4DFF00",# CLC 313 (77,255,0) :contentReference[oaicite:7]{index=7}
+  "Bosque fragmentado con vegetacion secundaria" = "#4DFF00",# CLC 313 (77,255,0) :contentReference[oaicite:7]{index=7}
   "Vegetacion secundaria"  = "#A6F668",
   "Arbustal denso"                            = "#A6F200",  # CLC 324 (166,242,0) :contentReference[oaicite:8]{index=8}
   "Arbustal abierto"                          = "#A6E64D",  # CLC 323 (166,230,77) :contentReference[oaicite:9]{index=9}
@@ -213,13 +213,14 @@ paleta_clc <- c(
   "Cultivos transitorios"                     = "#FFFFA8",  # CLC 211 (255,255,168) :contentReference[oaicite:18]{index=18}
   "Cafe"                                      = "#F2A64D",  # CLC 222 (242,166,77) :contentReference[oaicite:19]{index=19}
   "Mosaico de cultivos con espacios naturales" = "#FFE6A6", # CLC 241 (255,230,166) :contentReference[oaicite:20]{index=20}
+  "Mosaico de cultivos y espacios naturales" = "#FFE6A6",
   "Mosaico de cultivos y pastos"              = "#FFE64D",  # CLC 242 (255,230,77) :contentReference[oaicite:21]{index=21}
   "Mosaico de cultivos, pastos y espacios naturales" = "#E6CC4D", # CLC 243 (230,204,77) :contentReference[oaicite:22]{index=22}
   "Mosaico de pastos con espacios naturales"   = "#E6E64D", # CLC 231 (230,230,77) :contentReference[oaicite:23]{index=23}
   "Zonas pantanosas"                          = "#A6A6FF",  # CLC 411 (166,166,255) :contentReference[oaicite:24]{index=24}
   "Mosaico de pastos y espacios naturales"   = "#E6E64D",
    "Turberas"                                   = "#4D4DFF",  # CLC 412 (77,77,255) :contentReference[oaicite:25]{index=25}
-  "Vegetación acuatica sobre cuerpos de agua" = "#80F2E6",  # CLC 512 (128,242,230) :contentReference[oaicite:26]{index=26}
+  "Vegetacion acuatica sobre cuerpos de agua" = "#80F2E6",  # CLC 512 (128,242,230) :contentReference[oaicite:26]{index=26}
   "Rio"                                       = "#00CCF2",  # CLC 511 (0,204,242) :contentReference[oaicite:27]{index=27}
   "Canales"                                   = "#00CCF2",  # CLC 511 (0,204,242) :contentReference[oaicite:28]{index=28}
   "Cuerpo de agua artificial"                 = "#80F2E6",  # CLC 512 (128,242,230) :contentReference[oaicite:29]{index=29}
