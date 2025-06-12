@@ -128,7 +128,7 @@ mapa_final <- tm_shape() +
     title.bg.color  = "white",
     
     legend.outside          = FALSE,
-    legend.position = c("right", "bottom"),
+    legend.position = c("right", "top"),
     legend.title.size       = 1.2,        # equivale aprox. a 14–16 pt
     legend.text.size        = 1.0,        # equivale aprox. a 12–14 pt
     legend.bg.color         = "white",
@@ -219,16 +219,16 @@ mapa_contexto <- tm_shape(jurisdiccion_car) +
 
 # 5.1. Guardar en PDF A0 (orientación horizontal: 118.9 cm × 84.1 cm)
 pdf(paste0("mapa_", sel_municipios, "_A0.pdf"),
-    width  = 118.9 / 2.54,   # convertir cm a pulgadas
-    height = 84.1  / 2.54,
+    width  = 84.1  / 2.54,   # convertir cm a pulgadas
+    height = 118.9 / 2.54,
     family = "Helvetica")    # familia de fuente opcional
 
 # 5.2. Repetimos el proceso de impresión con viewport dentro del PDF
 print(mapa_final)
-mi_vp <- viewport(x      = 0.10,
-                  y      = 0.65,
-                  width  = 0.25,
-                  height = 0.25,
+mi_vp <- viewport(x      = 0.795,
+                  y      = 0.14,
+                  width  = 0.20,
+                  height = 0.20,
                   just   = c("left", "bottom"))
 print(mapa_contexto, vp = mi_vp)
 

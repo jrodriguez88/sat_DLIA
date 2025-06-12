@@ -8,22 +8,31 @@ source("requirements.R")
 
 ## Internal functions
 source("src/funciones_sat_car.R")
+
 source("src/visor_car.R")
+geoCAR_layers$layer
+
 
 ## Data Ingestion
-source("src/ingest_layer_geocar.R")
-source("src/ingest_layer_coberturas")
-source("src/ingest_layer_combustible.R")
-source("src/ingest_layer_satelital.R")
+#sel_municipios <- c("RÁQUIRA")
+selected_vars <- read_csv("data/geoambiental_car_select.csv")
+descarga_fuente <- FALSE
+dir_geocar <- "data/raw/car/" 
+source("src/ingest_layer_geocar_all.R")
+
+# source("src/ingest_layer_coberturas")
+# source("src/ingest_layer_combustible.R")
+# source("src/ingest_layer_satelital.R")
 
 
 # Map plot
+sel_municipios <- c("GUADUAS")
 source("src/MAP_incendios_taller.R")
 source("src/MAP_incendios_taller_plotter.R")
 
 
 ## Preprocess vector data
-source("src/preprocess_vector_data.R")
+# source("src/preprocess_vector_data.R")
 
 ## Rasterize layer to model
-source("src/rasterize_layers.R")
+# source("src/rasterize_layers.R")

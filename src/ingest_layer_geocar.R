@@ -7,29 +7,89 @@
 # library(tidyverse)
 
 # 1. Un vector con todos los nombres de layer
-geoCAR_layers$layer
+# geoCAR_layers$layer
+# 
+# 
+# selected_vars <- read_csv("data/geoambiental_car_select.csv")
 
-layer_names <- c(
-  "Límite Departamental",
-  "Municipios",
-  "Direcciones Regionales",
-  "Áreas Naturales Protegidas",
-  "Ecosistemas - IDEAM año 2017",
-  "Veredas",
-  "Drenaje Doble",
-  "Drenaje sencillo",
-  "Embalse",
-  "Vía",
-  "Cuencas CAR",
-  "Centro poblado DANE",
-  "Riesgos - Registros de eventos"
-  
-)
+
+# selected_vars %>% left_join(geoCAR_layers)
+# 
+# geoCAR
+# 
+# layer_names <- c(
+#   #VISOR/Division_Territorial
+#   # VISOR/Base10000
+#   # VISOR/Capas_base
+#   "Límite Departamental",
+#   "Municipios",
+#   "Direcciones Regionales",
+#   "Veredas",
+#   "Centro poblado DANE",
+#   
+#    "Red Vial INVIAS",
+#   "Vias"
+#   
+#   
+#   # VISOR/Ecosistemas
+#   "Áreas Naturales Protegidas",
+#   "Ecosistemas - IDEAM año 2017",
+#   "Zonas de vida",
+#   
+#   # VISOR/Suelos
+#   "Cobertura y Uso IGAC 2016",
+#   "Unidades Geología",
+#   "Suelos 1:100.000",
+#   "Clase Agrologica 1:100.000",
+#   "Biomas",
+#   "Geomorfologia",
+#   
+#   
+#   
+#   "Drenaje Doble",
+#   "Drenaje sencillo",
+#   "Embalse",
+#   "Vía",
+#   "Cuencas CAR",
+#   "Centro poblado DANE",
+#   "Riesgos - Registros de eventos"
+#   
+# )
+# 
+# 
+# layer_names <- c(
+#   #VISOR/Division_Territorial
+#   
+#   "Límite Departamental",
+#   "Municipios",
+#   "Direcciones Regionales",
+#   "Veredas",
+#   "Centro poblado DANE",
+#   
+#   
+#   # VISOR/Ecosistemas
+#   "Áreas Naturales Protegidas",
+#   "Ecosistemas - IDEAM año 2017",
+#   "Zonas de vida",
+#   
+#   
+#   
+#   "Drenaje Doble",
+#   "Drenaje sencillo",
+#   "Embalse",
+#   "Vía",
+#   "Cuencas CAR",
+#   "Centro poblado DANE",
+#   "Riesgos - Registros de eventos"
+#   
+# )
+# 
+
 
 
 #1.1. Selecciona el municipio de interes
-sel_municipios <- c("RICAURTE", "NILO", "GUADUAS", "BOJACÁ", "RÁQUIRA")
-sel_municipios <- c("GUADUAS")
+#sel_municipios <- c("RICAURTE", "NILO", "GUADUAS", "BOJACÁ", "RÁQUIRA")
+#sel_municipios <- c("GUADUAS")
 
 ## cabeceras
 ## cuerpos hidricos

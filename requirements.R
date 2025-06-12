@@ -21,6 +21,6 @@ library(leaflet)
 library(RColorBrewer)
 library(tmap)      # mapeo temático
 library(grid) 
-
+library(htmlwidgets)
 
 
