@@ -45,7 +45,8 @@ layer_seleccionadas <- c(
 # reombra y reprojecta
 # layers_mapa <- setNames(layers_mapa, layer_names) %>% map(~st_transform(.x, crs = 4326))
 
-layers_mapa <- layers_geocar[layer_seleccionadas] %>% map(~st_transform(.x, crs = 4326))
+layers_mapa <- layers_geocar[layer_seleccionadas] %>% 
+  map(~st_transform(.x, crs = 4326))
 names(layers_mapa)
 layers_mapa %>% map(names)
 

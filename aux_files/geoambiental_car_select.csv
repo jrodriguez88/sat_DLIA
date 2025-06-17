@@ -1,0 +1,59 @@
+id,layer,geometryType
+108,Drenaje sencillo,esriGeometryPolyline
+112,Laguna,esriGeometryPolygon
+113,Subcuencas CAR,esriGeometryPolygon
+114,Cuencas CAR,esriGeometryPolygon
+1,Alto Suarez_Incendios Forestales,esriGeometryPolygon
+2,Bogota_Incendios Forestales,esriGeometryPolygon
+3,Carare_Incendios Forestales,esriGeometryPolygon
+4,Garagoa_Incendios Forestales,esriGeometryPolygon
+5,Medio y Bajo Suarez_Incendios Forestales,esriGeometryPolygon
+32,Rionegro Escenario Amenaza Incendio,esriGeometryPolygon
+36,Sumapaz Escenario Amenaza Incendio,esriGeometryPolygon
+0,Vía,esriGeometryPolyline
+1,Límite Vía,esriGeometryPolyline
+2,Límite Vía - Región,esriGeometryPolygon
+3,Drenaje Sencillo,esriGeometryPolyline
+4,Canal Sencillo,esriGeometryPolyline
+5,Jaguey,esriGeometryPolygon
+6,Laguna,esriGeometryPolygon
+7,Humedal,esriGeometryPolygon
+8,Embalse,esriGeometryPolygon
+9,Drenaje Doble,esriGeometryPolygon
+10,Canal Doble,esriGeometryPolygon
+11,Curva de Nivel,esriGeometryPolyline
+0,Quebradas IGAC,esriGeometryPolyline
+1,Canal sencillo IGAC,esriGeometryPolyline
+2,Curvas Nivel,esriGeometryPolyline
+4,Canal doble IGAC,esriGeometryPolygon
+5,Río doble IGAC,esriGeometryPolygon
+7,Vias,esriGeometryPolyline
+10,Buffer fuentes 30mts,esriGeometryPolygon
+11,Red Vial INVIAS,esriGeometryPolyline
+0,Centro poblado DANE,esriGeometryPolygon
+1,Veredas,esriGeometryPolygon
+2,Resguardos Indígenas,esriGeometryPolygon
+7,Límite Departamental,esriGeometryPolygon
+9,Municipios,esriGeometryPolygon
+11,Direcciones Regionales,esriGeometryPolygon
+1,Ecosistemas - IDEAM año 2017,esriGeometryPolygon
+2,Zonas de vida,esriGeometryPolygon
+11,Áreas Naturales Protegidas,esriGeometryPolygon
+17,Titulos_vigentes_historicos,esriGeometryPolygon
+24,Titulos_Mineros_Actuales,esriGeometryPolygon
+0,Zonificación Ambiental POMCA Río Bogotá 2019 - 2120,esriGeometryPolygon
+1,Zonificación Ambiental POMCA Río Carare Minero 2019 - 2312,esriGeometryPolygon
+2,Zonificación Ambiental POMCA Río Alto Suárez 2018 - 240101,esriGeometryPolygon
+3,Zonificación Ambiental POMCA Río Medio y Bajo Suárez 2018 - 240102,esriGeometryPolygon
+4,Zonificación Ambiental POMCA Río Garagoa 2018 - 3507,esriGeometryPolygon
+5,Zonificación Ambiental POMCA Rionegro 2022 - 2306,esriGeometryPolygon
+6,Zonificación Ambiental POMCA Río Guayuriba 2019 - 3502,esriGeometryPolygon
+7,Zonificación Ambiental POMCA Río Guavio 2019 - 3506,esriGeometryPolygon
+8,Zonificación Ambiental POMCA Río Seco y Otros Directos al Magdalena 2019 - 2123,esriGeometryPolygon
+9,Zonificación Ambiental POMCA Río Sumapaz 2023 - 2119,esriGeometryPolygon
+7,Cobertura y Uso IGAC 2016,esriGeometryPolygon
+8,Unidades Geología,esriGeometryPolygon
+10,Suelos 1:100.000,esriGeometryPolygon
+12,Clase Agrologica 1:100.000,esriGeometryPolygon
+14,Biomas,esriGeometryPolygon
+15,Geomorfologia,esriGeometryPolygon
