@@ -1,0 +1,180 @@
+---
+title: "Mapas de Combustible - FuelBed - Pettinari2015"
+author: "Rodriguez-Espinoza, J."
+date: "2025-06-25"
+output: html_document
+runtime: shiny
+---
+
+
+```{r setup, include=FALSE}
+library(shiny)
+library(leaflet)
+library(terra)
+library(readxl)
+library(purrr)
+library(dplyr)
+# Carga tu objeto SpatRaster aquí:
+path <- dirname(getwd())
+# path <- getwd()
+
+
+fuel_bed_car <- rast(file.path(path, "data/interm/fuel_bed_car_ID.tif"))
+
+
+fuel_bed_parameters <- readxl::read_excel(file.path(path, "data/raw/pettinari2015/Global_fuelbeds_parameters_v1.2.xlsx"), 
+                                  sheet = "Fuelbeds_metric")
+
+
+generate_var_raster <- function(var_name, fuel_bed_parameters, rast_join) {
+  # 1) Extrae la tabla de lookup
+  lookup <- fuel_bed_parameters %>%
+    select(JOIN_VALUE, !!sym(var_name)) %>%
+    distinct()
+  
+  # 2) Genera el raster
+  is_num <- is.numeric(lookup[[var_name]])
+  if (is_num) {
+    out <- terra::subst(
+      x      = rast_join,
+      from   = lookup$JOIN_VALUE,
+      to     = lookup[[var_name]],
+      others = NA
+    )
+    names(out) <- var_name
+    
+  } else {
+    # crea un raster-factor
+    out <- as.factor(rast_join)
+    rat <- data.frame(
+      ID       = lookup$JOIN_VALUE,
+      Category = lookup[[var_name]],
+      stringsAsFactors = FALSE
+    )
+    levels(out)[[1]] <- rat
+    names(out) <- var_name
+  }
+  
+  # 3) PODA: elimina niveles que no aparecen en ningún píxel
+  #   a) identifica los JOIN_VALUE presentes en el área
+  present_ids <- terra::freq(rast_join)[,"value"]
+  #   b) para rasters numéricos no es necesario; para factores:
+  if (!is_num) {
+    rat2 <- levels(out)[[1]] %>%
+      filter(ID %in% present_ids)
+    levels(out)[[1]] <- rat2
+  }
+  
+  return(out)
+}
+
+
+
+raster_combust <- map(names(fuel_bed_parameters)[c(2, 4:67)], ~generate_var_raster(.x, fuel_bed_parameters, fuel_bed_car))
+
+raster_combust <- setNames(raster_combust, names(fuel_bed_parameters)[c(2, 4:67)])
+
+raster_combust <- rast(raster_combust)
+
+raster_combust
+
+layers <- names(raster_combust)
+
+layers
+```
+
+## Selección de capas
+
+```{r select_layers, echo=FALSE}
+# Selector desplegable con búsqueda (selectize)
+selectInput(
+  inputId   = "sel_layers",
+  label     = "Seleccionar capas:",
+  choices   = layers,
+  selected  = layers[1],
+  multiple  = TRUE,
+  selectize = TRUE
+)
+```
+
+## Mapa interactivo
+
+```{r map_output, echo=FALSE}
+# Contenedor donde se renderiza el mapa
+leafletOutput(
+  outputId = "map", 
+  height   = "600px"
+)
+```
+
+
+
+```{r server_logic, context="server", include=FALSE}
+# Mapa base inicial
+output$map <- renderLeaflet({
+  leaflet() %>%
+    addProviderTiles(providers$OpenStreetMap, group = "OpenStreetMap") %>%
+    addProviderTiles(providers$CartoDB.Positron, group = "CartoDB Positron") %>%
+    #addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+    addProviderTiles(providers$Esri.WorldImagery, group = "Esri World Imagery") %>%
+    setView(lng = mean(ext(raster_combust)[c(1,2)]), 
+            lat = mean(ext(raster_combust)[c(3,4)]), 
+            zoom = 6)
+})
+
+
+# Actualizar capas cuando cambien las seleccionadas
+observe({
+  req(input$sel_layers)
+  proxy <- leafletProxy("map")
+
+  # Limpiar todas las imágenes previas
+  proxy %>% clearImages()
+
+  # Añadir cada raster seleccionado
+  for (ly in input$sel_layers) {
+    proxy %>% addRasterImage(
+      raster_combust[[ly]],
+      layerId = ly,
+      group   = ly,
+      opacity = 0.4,
+      project = TRUE
+    )
+  }
+
+  # Control de capas
+  proxy %>% addLayersControl(
+    baseGroups    = c("OpenStreetMap", "CartoDB Positron", "Esri World Imagery"),
+    overlayGroups = input$sel_layers,
+    options       = layersControlOptions(collapsed = FALSE)
+  )
+})
+
+# Popup con valor de pixel al hacer clic
+observeEvent(input$map_click, {
+  click <- input$map_click
+  req(click, input$sel_layers)
+
+  # Extraer coordenadas
+  pt <- data.frame(x = click$lng, y = click$lat)
+
+  # Extraer valores de las capas seleccionadas
+  vals <- terra::extract(raster_combust[[input$sel_layers]], pt)
+
+  # Crear contenido HTML para popup
+  labels <- mapply(function(name,val) {
+    paste0("<b>", name, ":</b> ", val)
+  }, name = input$sel_layers, val = vals[1,-1])
+
+  html <- paste(labels, collapse = "<br/>")
+
+  # Mostrar popup
+  leafletProxy("map") %>%
+    clearPopups() %>%
+    addPopups(
+      lng   = click$lng,
+      lat   = click$lat,
+      popup = html
+    )
+})
+```

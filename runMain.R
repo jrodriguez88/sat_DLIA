@@ -25,7 +25,7 @@ source("src/ingest_layer_geocar_all.R")
 # source("src/ingest_layer_satelital.R")
 
 
-# Map plot
+# Map plot -  para analisis rtapidos
 sel_municipios <- c("GUADUAS")
 source("src/MAP_incendios_taller.R")
 source("src/MAP_incendios_taller_plotter.R")

@@ -1,6 +1,6 @@
-library(terra)
-library(tidyverse)
-library(sf)
+# library(terra)
+# library(tidyverse)
+# library(sf)
 
 
 jurisdiccion_car <- vect("data/raw/car/11_direcciones_regionales.gpkg")
@@ -11,13 +11,10 @@ jurisdiccion_car_4326 <- st_transform(st_as_sf(jurisdiccion_car), crs = 4326) %>
   summarise(geometry = st_union(geometry))
 
 
-jurisdiccion_limite <- 
-
-
 buffer_jurisdiccion <- st_buffer(st_union(jurisdiccion_car_4326), dist = 20000)
 
-plot(buffer_jurisdiccion)
-lines(jurisdiccion_car_4326)
+# plot(buffer_jurisdiccion)
+# lines(jurisdiccion_car_4326)
 
 # Tile Suramerica
 tile3 <- "data/raw/pettinari2015/Global_fuelbeds_map_Tile3.tif"
@@ -26,12 +23,12 @@ tile3 <- "data/raw/pettinari2015/Global_fuelbeds_map_Tile3.tif"
 fuel_bed <- rast(tile3)
 
 # 2. Reproyectar usando vecino más cercano para datos categóricos
-fuel_bed_proj <- project(fuel_bed,
-                         crs(jurisdiccion_car),
-                         method = "near")
+# fuel_bed_proj <- project(fuel_bed,
+#                          crs(jurisdiccion_car),
+#                          method = "near")
 
 # 3. Recortar y enmascarar a tu vector de jurisdicción
-fuel_bed_car <- crop(fuel_bed_proj, jurisdiccion_car, mask = TRUE)
+fuel_bed_car <- crop(fuel_bed, jurisdiccion_car_4326, mask = TRUE)
 
 # 4. Comprobar que tus valores están intactos
 # unique(values(fuel_bed_car))
@@ -42,19 +39,19 @@ fuel_bed_car <- crop(fuel_bed_proj, jurisdiccion_car, mask = TRUE)
 #   crop(jurisdiccion_car, mask = T)
 
 
-writeRaster(fuel_bed_car, "data/interm/fuel_bed_car_ID.tif", overwrite = "TRUE")
+writeRaster(fuel_bed_car, "data/interm/fuel_bed_car_ID.tif", overwrite = TRUE)
 
-plot(fuel_bed_car)
-plot(as.factor(fuel_bed_car))
-freq(fuel_bed_car)
-terra::datatype(fuel_bed_car)
+# plot(fuel_bed_car)
+# plot(as.factor(fuel_bed_car))
+# freq(fuel_bed_car)
+# terra::summary(fuel_bed_car)
 
 
 fuel_bed_parameters <- read_excel("data/raw/pettinari2015/Global_fuelbeds_parameters_v1.2.xlsx", 
                                   sheet = "Fuelbeds_metric")
 
 
-fuel_bed_parameters$Biome %>% unique()
+# fuel_bed_parameters$Biome %>% unique()
 
 
 #───────────────────────────────────────────────────────────
@@ -143,49 +140,60 @@ generate_var_raster <- function(var_name, params_df, rast_join) {
 
 
 # tu raster base
-rast_join <- fuel_bed_car
+# rast_join <- fuel_bed_car
 
 # tu tabla de parámetros
 params_df <- fuel_bed_parameters
-par(mfrow = c(1, 3))
+# par(mfrow = c(1, 3))
+# 
+# # 1) Tree Cover (%) → raster numérico
+# rast_tree  <- generate_var_raster("Tree Cover (%)", params_df, fuel_bed_car)
+# plot(rast_tree, main="Tree Cover (%)")
+# 
+# # 2) Biome → raster categórico
+# rast_biome <- generate_var_raster("Biome", params_df, fuel_bed_car)
+# plot(rast_biome, main="Biome", type="classes")
+# 
+# # 3) LandCover → raster categórico
+# rast_lc    <- generate_var_raster("LandCover", params_df, fuel_bed_car)
+# plot(rast_lc, main="LandCover", type="classes")
+# 
+# 
+# rast_lc    <- generate_var_raster("LandCover", params_df, fuel_bed_car)
+# plot(rast_lc, main="LandCover", type="classes")
+# 
+# names(params_df)
 
-# 1) Tree Cover (%) → raster numérico
-rast_tree  <- generate_var_raster("Tree Cover (%)", params_df, rast_join)
-plot(rast_tree, main="Tree Cover (%)")
+raster_combust <- map(names(params_df)[c(2, 4:67)], ~generate_var_raster(.x, params_df, fuel_bed_car))
 
-# 2) Biome → raster categórico
-rast_biome <- generate_var_raster("Biome", params_df, rast_join)
-plot(rast_biome, main="Biome", type="classes")
+raster_combust <- setNames(raster_combust, names(params_df)[c(2, 4:67)])
 
-# 3) LandCover → raster categórico
-rast_lc    <- generate_var_raster("LandCover", params_df, rast_join)
-plot(rast_lc, main="LandCover", type="classes")
+all_rast <- rast(raster_combust)
+names(all_rast) <- names(params_df)[c(2, 4:67)]
+
+writeRaster(all_rast, filename = "data/interm/fuel_bed_car_all.tif", datatype = "FLT4S", overwrite = TRUE)
 
 
-
-
-raster_combust <- map(names(params_df)[4:67], ~generate_var_raster(.x, params_df, rast_join))
-
-raster_combust <- setNames(raster_combust, names(params_df)[4:67])
-
-writeRaster(rast(raster_combust), filename = "data/interm/fuel_bed_car_all.tif")
+# saveRDS(rast(raster_combust), "data/interm/fuelbeds.rds")
+# r2 <- readRDS("data/interm/fuelbeds.rds")
 
 
 
 dir.create("data/interm/combustible")
-names_rast_comb <- paste0(str_replace_all(names(params_df)[4:67], " ", "_"), ".tif") %>% 
+names_rast_comb <- paste0(str_replace_all(names(params_df)[c(2, 4:67)], " ", "_"), ".tif") %>% 
   str_replace_all("#", "No") %>% str_replace_all("/", "_per_")
 map2(.x = raster_combust, .y = names_rast_comb,
      ~writeRaster(.x, filename = paste0("data/interm/combustible/", .y), overwrite = T))
 
 
-par(mfrow = c(2, 5))
-map2(raster_combust, names(params_df)[4:67], ~plot(.x, main=.y, type="classes"))
-dev.off()
+par(mfrow = c(2, 2))
+map2(raster_combust, names(params_df)[c(2, 4:67)], ~plot(.x, main=.y, type="classes"))
+# dev.off()
 
 
-
-
-
-
-
+# test <- list.files("data/interm/combustible/", pattern = ".tif$", full.names = TRUE)[1] %>%
+#   map(rast)
+# 
+# 
+# 
+# test2 <- rast("data/interm/combustible/fuel_bed_car_all.tif")
