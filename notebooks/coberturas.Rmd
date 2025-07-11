@@ -1,0 +1,118 @@
+---
+title: "Coberturas - IDEAM - 2024"
+author: "Jeferson Rodriguez-Espinoza"
+date: "2025-06-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(sf)
+library(tidyverse)
+library(knitr)
+```
+
+```{r data-prep, echo=FALSE}
+
+cob_2024 <- st_read("D:/00_DEVELOPER/sat_DLIA/data/interm/coberturas/clc_car_ecosistemas_ideam_2024.gpkg")
+
+# Vector con los nombres de las variables (factores)
+vars <- c("gran_bioma", "bioma_prel", "ecos_sinte", "ecos_gener", "clima", "paisaje", "cob")
+
+# Calcular el área total del objeto
+total_area <- sum(st_area(cob_2024))/10000
+
+# Función que, dado el nombre de una variable, devuelve un tibble con:
+#   - nivel de la variable
+#   - área de ese nivel
+#   - porcentaje sobre el área total
+summarize_area_pct <- function(var) {
+  cob_2024 %>%
+    # agrupar por el factor dinámico
+    group_by(!! sym(var)) %>%
+    # unir geometrías y soltar grupos
+    summarise(geometry = st_union(geom), .groups = "drop") %>%
+    # calcular área y porcentaje
+    mutate(
+      area = st_area(geometry)/10000,
+      pct  = as.numeric(area)/ as.numeric(total_area) * 100
+    ) %>%
+    # opcional: eliminar la geometría para ver solo la tabla
+    st_drop_geometry() %>%
+    # ordenar de mayor a menor porcentaje
+    arrange(desc(pct)) %>%
+    # renombrar columna del factor a algo genérico "nivel"
+    rename(nivel = !! sym(var))
+}
+
+# Aplicar sobre todas las vars y guardarlo en una lista nombrada
+area_por_var <- map(vars, summarize_area_pct) %>% set_names(vars)
+
+# Función que genera el ggplot para un data frame y su nombre
+make_bar_plot <- function(df, var_name) {
+  ggplot(df, aes(x = fct_reorder(nivel, pct), y = pct)) +
+    geom_col() +
+    coord_flip() +
+    labs(
+      title = paste0("Distribución de área (%) por nivel de «", var_name, "»"),
+      x = var_name,
+      y = "Porcentaje de área"
+    ) +
+    theme_minimal()
+}
+
+# Crear una lista de plots, uno por variable
+plots_por_var <- imap(area_por_var, ~ make_bar_plot(.x, .y))
+
+```
+
+```{r mapas-por-var, echo=FALSE}
+# Generar lista de mapas para cada variable
+mapas_por_var <- lapply(vars, function(var) {
+  ggplot(cob_2024) +
+    geom_sf(aes_string(fill = var), color = NA) +
+    scale_fill_viridis_d(name = var) +
+    theme_minimal() +
+    labs(
+      title = paste0("Mapa de ", var),
+      subtitle = "Cob_2024"
+    )
+})
+names(mapas_por_var) <- vars
+```
+
+```{r report, results='asis'}
+# Iterar variables y mostrar mapa, tabla y gráfico de barras
+for (var in vars) {
+  mp <- mapas_por_var[[var]]
+  df <- area_por_var[[var]]
+  p  <- plots_por_var[[var]]
+
+  # Encabezado de sección
+  cat(paste0("## Variable: **", var, "**
+
+"))
+
+  # Mostrar mapa
+  print(mp)
+  cat("\n\n")
+
+  # Limitar tabla a los 20 primeros registros
+  df_tab <- df %>%
+    mutate(area = as.numeric(area)) %>%
+    select(nivel, area, pct) %>%
+    slice_head(n = 20)
+
+  # Renderizar tabla
+  cat(knitr::kable(
+    df_tab,
+    caption = paste("Top 20 niveles de porcentaje de área para", var),
+    digits = 2
+  ), sep = "\n")
+  cat("\n\n")
+
+  # Mostrar gráfico de barras
+  print(p)
+  cat("\n\n")
+}
+```

@@ -1,0 +1,458 @@
+---
+title: "Análisis Exploratorio de Registros Históricos de Incendios - DGOAT"
+author: "Rodriguez-Espinoza, J."
+subtitle: Importación, Preprocesamiento y Visualización de Datos de Incendios
+output:
+  pdf_document:
+    latex_engine: xelatex 
+    toc: true
+    toc_depth: '4'
+  html_document:
+    theme: cosmo
+    highlight: monochrome
+    toc: true
+    toc_float: false
+    toc_depth: 4
+    code_folding: hide
+    css: styles.css
+---
+
+# Introducción
+
+El presente documento realiza un **análisis exploratorio de datos (EDA)** sobre los registros históricos de incendios recopilados por la Dirección de Gestión del Riesgo (DGOAT). Se importarán, limpiarán y visualizarán los datos usando herramientas de análisis espacial y estadístico.
+
+# 1. Carga de Librerías
+
+Se cargan la librerias necesarias para el analisis
+
+```{r load-libraries, message=FALSE, warning=FALSE}
+library(terra)
+library(readxl)
+library(tidyverse)
+library(sf)
+library(skimr)
+library(grid)
+library(leaflet)
+library(RColorBrewer)
+library(viridis)
+
+```
+
+# 2. Importación de Datos Espaciales
+
+En esta sección se cargan los shapefiles de límites territoriales de Colombia, el modelo de elevación digital (DEM) y los límites de la jurisdicción CAR.
+
+```{r import-spatial-data}
+# Shapefiles - Límites territoriales
+#departamentos <- vect("data/spatial/Departamento.shp")
+#municipios <- vect("data/spatial/Municipio, Distrito y Área no municipalizada.shp")
+
+#cundinamarca_shp <- departamentos[departamentos$DeNombre == "Cundinamarca"]
+jurisdiccion_car <- vect("data/Jurisdiccion_CAR_198535255383287163/Jurisdiccion_CAR.shp")
+pomca_car <- project(vect("data/spatial/POMCA_Rio_Bogota.shp"), crs(cundinamarca_shp))
+
+# Modelo de elevación digital (DEM)
+DEM <- rast("data/spatial/dem_col.tif")
+car_dem <- crop(project(DEM, crs(cundinamarca_shp)), jurisdiccion_car, mask = TRUE)
+```
+
+# 3. Importación y Exploración de Datos de Incendios
+
+Cargamos los datos históricos de incendios desde una hoja de Excel y realizamos un análisis preliminar.
+
+```{r import-data, out.width="100%"}
+file <- "data/REGISTROS_IF.xlsx"
+raw_data <- read_excel(file, sheet = 1)
+skimr::skim(raw_data)
+
+#cundinamarca_shp <- st_as_sf(cundinamarca_shp)
+jurisdiccion_car <- st_as_sf(jurisdiccion_car)
+```
+
+# 4. Preprocesamiento de Datos
+
+Limpiamos y transformamos los datos, corrigiendo unidades, formato de variables y generando columnas útiles para el análisis.
+
+```{r preprocess-data, warning=FALSE}
+# Preprocesamiento - Test Data ----
+test_data <- raw_data %>% 
+  select(Municipio, `Vereda Localidad`, Fecha_reporte = `Fecha Reporte`,  Año, Este, Norte, Altura,`Nombre Punto`,  Clase,  `Causas Tipos`, Categoria, Subcategoria,`Area Afectada Ha`) %>%
+  mutate(class_area = 
+           case_when(
+             str_detect(`Area Afectada Ha`, pattern = "m2|metros cuadrados") ~ "m2",
+                                TRUE ~ "ha")) %>%
+  mutate(Fecha_reporte = as.Date(`Fecha_reporte`)) %>%
+  mutate(area1 = str_remove_all(`Area Afectada Ha`, "[aA-zZ]*")) %>%
+  mutate(area1 = str_replace(area1, ",", ".")) %>%
+  mutate(area1 = str_replace(area1, "[ ]+", ""),
+         area2 = parse_number(area1)) %>%
+  mutate(class_area = ifelse(area2>500, "m2", class_area)) %>%
+  mutate(area_metros = case_when(class_area == "m2" ~ area2,
+                                 class_area == "ha" ~ area2*10000,
+                                 TRUE ~ NA_real_),
+         area_hectareas = area_metros/10000) %>%
+  mutate(across(.cols = c(Municipio, 
+                          Clase,
+                          Categoria, Subcategoria,
+                          `Causas Tipos`), str_to_title)) %>%
+  select(-c(`Area Afectada Ha`, class_area, area1, area2)) %>% distinct()
+```
+
+# 5. Análisis Exploratorio de Datos
+
+## 5.1 Incendios por Municipio
+
+```{r incendios-municipio,fig.width=12, fig.height=8, dpi=300}
+test_data %>% group_by(Municipio) %>%
+  summarise(n = n(), area_total_afectada = sum(area_hectareas, na.rm = T)) %>%
+  arrange(desc(area_total_afectada)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, area_total_afectada), y = area_total_afectada)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Incendios por Municipio", x = "Municipio", y = "Area total afectada (ha)")
+
+test_data %>%
+  count(Municipio) %>% arrange(desc(n)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, n), y = n)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Incendios por Municipio", x = "Municipio", y = "Cantidad de incendios")
+```
+
+## 5.2 Distribución Temporal
+
+```{r temporal-distribution, out.width="100%", warning=F}
+
+##Anual
+test_data %>% 
+  ggplot(aes(x = factor(Año))) +
+  geom_bar(color = "black", fill = "tomato") +
+  labs(title = "Distribución de incendios por año", x = "Año", y = "Cantidad de incendios") +
+  theme_minimal()
+
+test_data %>% group_by(Año) %>%
+  summarise(n = n(), area_total_afectada = sum(area_hectareas, na.rm = T)) %>%
+  arrange(desc(area_total_afectada)) %>% slice(1:20) %>%
+  ggplot(aes(x = factor(Año), y = area_total_afectada)) +
+  geom_bar(stat = "identity", color = "black", fill = "tomato") + theme_minimal() +
+  labs(title = "Area Afectada por Incendios por Año", x = "Año", y = "Area total afectada (ha)")
+
+test_data %>% drop_na(`Causas Tipos`, Fecha_reporte) %>% 
+  filter(Fecha_reporte> ymd("2011-12-31" )) %>%
+  ggplot(aes(x = factor(Año), fill = `Causas Tipos`)) +
+  geom_bar(position = "fill", color = "black")+ #scale_fill_viridis_d() +
+  labs(title = "Proporcion de causas de incendios por Año", 
+       x = "Año", y = NULL) +
+  theme_minimal()
+
+test_data %>% drop_na(Categoria, Fecha_reporte) %>% 
+  filter(Fecha_reporte> ymd("2011-12-31" )) %>%
+  ggplot(aes(x = factor(Año), fill = Categoria)) +
+  geom_bar(position = "fill", color = "black")+ #scale_fill_viridis_d() +
+  labs(title = "Proporcion de Categoria de incendios por Año", 
+       x = "Año", y = NULL) +
+  theme_minimal()
+
+
+# Mensual
+test_data %>% drop_na(Fecha_reporte) %>%
+  ggplot(aes(x = month(Fecha_reporte, label = T))) +
+  geom_bar(color = "black", fill = "tomato") +
+  labs(title = "Distribución de incendios por Mes", x = "Mes", y = "Cantidad de incendios") +
+  theme_minimal()
+
+
+test_data %>% drop_na(Fecha_reporte) %>%
+  ggplot(aes(x = month(Fecha_reporte, label = T), y  = area_hectareas)) +
+  stat_summary(fun.y = sum, color = "black", fill = "tomato", geom = "bar") +
+  labs(title = "Area Afectada por incendios por Mes", x = "Mes", y = "Area Afectada - (ha)") +
+  theme_minimal()
+
+
+test_data %>% drop_na(`Causas Tipos`, Fecha_reporte) %>%
+  ggplot(aes(x = month(Fecha_reporte, label = T), fill = `Causas Tipos`)) +
+  geom_bar(position = "fill", color = "black") +
+  labs(title = "Proporcion de causas de incendios por mes", x = "Mes", y = NULL) +
+  theme_minimal()
+
+
+test_data %>% drop_na(Categoria, Fecha_reporte) %>%
+  ggplot(aes(x = month(Fecha_reporte, label = T), fill = Categoria)) +
+  geom_bar(position = "fill", color = "black") +
+  labs(title = "Proporcion de Categoria de incendios por mes", x = "Mes", y = NULL) +
+  theme_minimal()
+
+
+```
+
+## 5.3 Incendios por tipo y Categoria
+
+```{r tipo_categoria, fig.height=10, fig.width=10}
+test_data %>% drop_na(`Causas Tipos`) %>%
+  group_by(`Causas Tipos`) %>%
+  summarise(total_area = sum(area_hectareas, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(`Causas Tipos`, total_area), y = total_area)) +
+  geom_bar(stat = "identity", fill = "darkgreen") +
+  coord_flip() +
+  labs(title = "Área quemada por tipo de incendio", x = "Causas Tipos", y = "Área quemada (ha)") +
+  theme_minimal() 
+
+test_data %>% drop_na(Categoria) %>%
+  group_by(Categoria) %>%
+  summarise(total_area = sum(area_hectareas, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(Categoria, total_area), y = total_area)) +
+  geom_bar(stat = "identity", fill = "darkgreen") +
+  coord_flip() +
+  labs(title = "Área quemada por Categoria de incendio", x = "Categoria", y = "Área quemada (ha)") +
+  theme_minimal() 
+
+test_data %>% drop_na(Subcategoria) %>%
+  group_by(Subcategoria) %>%
+  summarise(total_area = sum(area_hectareas, na.rm = TRUE)) %>%
+  ggplot(aes(x = reorder(Subcategoria, total_area), y = total_area)) +
+  geom_bar(stat = "identity", fill = "darkgreen") +
+  coord_flip() +
+  labs(title = "Área quemada por Subcategoria de incendio", x = "Subcategoria", y = "Área quemada (ha)") +
+  theme_minimal() 
+
+
+
+
+```
+
+# 6. Visualización Espacial de Incendios
+
+Se genera un mapa del área de estudio mostrando los incendios registrados y la cobertura geográfica.
+
+```{r spatial-visualization, fig.height=10, fig.width=10, warning=FALSE, dpi=300}
+
+# 1. Crear el minigráfico de incendios por municipio
+minigrafico <- test_data %>%
+  count(Municipio) %>%
+  arrange(desc(n)) %>%
+  slice(1:10) %>%
+  ggplot(aes(x = reorder(Municipio, n), y = n)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() +
+  theme_minimal() +  # Reducir tamaño del texto
+  labs(title = "Top 10 Municipios", x = NULL, y = "No. Registros de incendios")
+
+# Convertir el minigráfico en un grob
+minigrafico_grob <- ggplotGrob(minigrafico)
+# 1. Cargar el DEM como objeto raster
+dem <- car_dem
+
+# 2. Transformar el DEM a EPSG:9377 si es necesario
+if (crs(dem) != "EPSG:9377") {
+  dem <- project(dem, "EPSG:9377")
+}
+
+# 3. Convertir el raster DEM a un formato compatible con ggplot2
+dem_df <- as.data.frame(dem, xy = TRUE)  # Extraer valores raster como dataframe
+names(dem_df)[3] <- "elevation"  # Renombrar la columna de valores del DEM
+
+# 4. Asignar EPSG:3116 y transformar los datos de incendios a EPSG:9377
+sf_obj_3116 <- st_as_sf(test_data, coords = c("Este", "Norte"), crs = 3116)
+sf_obj_9377 <- st_transform(sf_obj_3116, crs = 9377)
+
+# 5. Transformar el shapefile de Cundinamarca a EPSG:9377
+# if (st_crs(cundinamarca_shp)$epsg != 9377) {
+#   cundinamarca_shp <- st_transform(cundinamarca_shp, crs = 9377)
+# }
+
+# 6. Visualización del DEM en escala de grises y los puntos de incendios
+# Insertar el minigráfico con dimensiones ajustadas
+ggplot() +
+  geom_raster(data = dem_df, aes(x = x, y = y, fill = elevation), alpha = 0.7) +
+  scale_fill_gradient(low = "white", high = "black", name = "Elevación (m)") +
+
+  geom_sf(data = jurisdiccion_car, fill = NA, color = "black") +
+  geom_sf(data = st_as_sf(pomca_car), fill = NA, color = "darkgreen", linewidth = 1.5) +
+
+  geom_sf(data = sf_obj_9377, aes(size = area_hectareas, color = area_hectareas), alpha = 0.7) +
+  scale_size_continuous(name = "Área Afectada (ha)", range = c(1, 10)) +
+  scale_color_viridis_c(name = "Área Afectada (ha)", option = "inferno") +
+
+    # Añadir anotación para proyección y datum
+    annotate("text", x = min(dem_df$x), y = min(dem_df$y),
+             label = "Proyección: EPSG:9377\nDatum: MAGNA-SIRGAS 2018",
+             hjust = 0, size = 3, color = "black") +
+  
+  annotation_custom(minigrafico_grob, 
+                    xmin = max(dem_df$x) -70000,  # Ajusta la posición horizontal
+                    xmax = max(dem_df$x) +10000,          # Define el ancho
+                    ymin = min(dem_df$y) + 100000 ,          # Ajusta la posición vertical
+                    ymax = min(dem_df$y)) +# Define la altura
+  
+  labs(x = "Latitud", y = "Longitud",
+       title = "Mapa de Incendios en la Jurisdicción de la CAR -  Periodo 2012 - 2023",
+       subtitle = "Puntos representan áreas afectadas por incendios (en hectáreas),\nPOMCA Rio Bogotá - Res. 0957(CAR): Polígono en color verde.",       caption = "Autor: Rodriguez-Espinoza, CAR - DLIA 2024 | Fuente datos: CAR - Gestión del riesgo DGOAT",
+       color = "Área (ha)",
+       size = "Área (ha)") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.caption = element_text(size = 9, hjust = 0),
+    legend.position = "right"
+  )
+
+
+## Mapa por coberturas 
+
+ggplot() +
+  geom_sf(data = st_union(jurisdiccion_car), fill = "gray90", color = "black") +
+  geom_sf(data = sf_obj_9377, aes(color = Categoria, size = area_hectareas)) +
+  geom_sf(data = st_as_sf(pomca_car), fill = NA, color = "darkgreen", linewidth = 1.5) +
+  
+  theme_minimal() +
+  labs(
+    title = "Incendios por Categoria y area afectada",
+    color = "Categoría"
+  )# 1. Asignar EPSG:3116 a las coordenadas actuales
+
+
+```
+
+
+<!-- # 7. Mapa Interactivo -->
+
+<!-- ```{r interactive_map, warning=FALSE, fig.height=10, fig.width=9.5} -->
+
+<!-- #Reproyectar las capas al sistema EPSG:4326 -->
+<!-- jurisdiccion_car_4326 <- st_transform(jurisdiccion_car, crs = 4326) %>% -->
+<!--   group_by(Direccion) %>% -->
+<!--   summarise(geometry = st_union(geometry)) -->
+<!-- pomca_car_4326 <- st_transform(st_as_sf(pomca_car), crs = 4326) -->
+<!-- sf_obj_4326 <- st_transform(sf_obj_9377, crs = 4326) -->
+
+<!-- # Opcional: Reproyectar el raster DEM -->
+<!-- dem_4326 <- project(car_dem, "EPSG:4326") -->
+
+
+<!-- # Crear una paleta de colores basada en el área afectada -->
+<!-- # pal_area <- colorNumeric( -->
+<!-- #   palette = "Reds",           # Paleta de colores (rojo) -->
+<!-- #   domain = sf_obj_4326$area_hectareas, # Variable de intensidad -->
+<!-- #   na.color = "transparent"    # Color para valores faltantes -->
+<!-- # ) -->
+<!-- pal_area <- colorNumeric( -->
+<!--   palette = colorRampPalette(c("yellow", "orange", "red", "darkred"))(256), -->
+<!--   domain = sf_obj_4326$area_hectareas, -->
+<!--   na.color = "transparent" -->
+<!-- ) -->
+
+<!-- # Crear una paleta de colores categórica para "Dirección" -->
+<!-- pal_direccion <- colorFactor( -->
+<!--   palette = brewer.pal(n = length(unique(jurisdiccion_car_4326$Direccion)), "Set1"), -->
+<!--   domain = jurisdiccion_car_4326$Direccion -->
+<!-- ) -->
+
+<!-- pal_direccion <- colorFactor( -->
+<!--   palette = viridis(length(unique(jurisdiccion_car_4326$Direccion)), option = "cividis", begin = 0.2, end = 0.8), -->
+<!--   domain = jurisdiccion_car_4326$Direccion -->
+<!-- ) -->
+
+<!-- # Crear paleta de colores para la elevación -->
+<!-- pal_elevacion <- colorNumeric( -->
+<!--   palette = terrain.colors(256),  # Paleta para la elevación -->
+<!--   domain = values(dem_4326),      # Rango de valores del raster DEM -->
+<!--   na.color = "transparent" -->
+<!-- ) -->
+
+
+
+
+
+<!-- # Crear el mapa interactivo con múltiples mapas base -->
+<!-- leaflet() %>% -->
+<!--   # Mapas base -->
+<!--   addProviderTiles(providers$OpenStreetMap, group = "OpenStreetMap") %>% -->
+<!--   addProviderTiles(providers$CartoDB.Positron, group = "CartoDB Positron") %>% -->
+<!--   #addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>% -->
+<!--   addProviderTiles(providers$Esri.WorldImagery, group = "Esri World Imagery") %>% -->
+
+<!--   # Agregar el DEM reproyectado -->
+<!--   addRasterImage(dem_4326, colors = pal_elevacion, opacity = 0.7, group = "Elevación") %>% -->
+
+<!--   # Agregar límites de jurisdicción reproyectados -->
+<!--   addPolygons(data = jurisdiccion_car_4326, color = "black", weight = 1,  -->
+<!--               fillOpacity = 0.6, -->
+<!--               fillColor = ~pal_direccion(Direccion),  -->
+<!--               group = "Jurisdicción CAR",  -->
+<!--               popup = ~paste0("<strong>Dirección:</strong> ", Direccion)) %>% -->
+
+<!--   # Agregar polígono POMCA reproyectado -->
+<!--   addPolylines(data = pomca_car_4326, color = "green", weight = 2, -->
+<!--                group = "POMCA Río Bogotá") %>% -->
+
+<!--   # Agregar puntos de incendios con popups -->
+<!--   addCircleMarkers(data = sf_obj_4326 %>% mutate(Mes = month(Fecha_reporte, label = T)), -->
+<!--                    radius = ~sqrt(area_hectareas),  # Tamaño proporcional al área afectada -->
+<!--                    color = ~pal_area(area_hectareas),  # Color basado en el área -->
+<!--                    fillColor = ~pal_area(area_hectareas), -->
+<!--                    fillOpacity = 0.7, stroke = FALSE, -->
+<!--                    group = "Registro Incendios", -->
+<!--                    popup = ~paste0( -->
+<!--                      "<strong>Municipio:</strong> ", Municipio, "<br>", -->
+<!--                      "<strong>Vereda Localidad:</strong> ", `Vereda Localidad`, "<br>", -->
+<!--                      "<strong>Año de Registro:</strong> ", `Año`, "<br>", -->
+<!--                      "<strong>Mes de Registro:</strong> ", Mes, "<br>", -->
+<!--                     # "<strong>Nombre o Punto:</strong> ", `Nombre Punto`, "<br>", -->
+<!--                      "<strong>Área Afectada (ha):</strong> ", round(area_hectareas, 2), "<br>", -->
+<!--                      "<strong>Categoría:</strong> ", Categoria, "<br>", -->
+<!--                      "<strong>Causa o Tipo:</strong> ", `Causas Tipos` -->
+<!--                    )) %>% -->
+
+<!--   # Agregar leyenda para el área afectada -->
+<!--   addLegend("bottomright", pal = pal_area, values = sf_obj_4326$area_hectareas, -->
+<!--             title = "Área Afectada (ha)", opacity = 1) %>% -->
+
+<!--   # Agregar leyenda para la elevación -->
+<!--   addLegend("bottomleft", pal = pal_elevacion, values = values(dem_4326), -->
+<!--             title = "Elevación (m)", opacity = 1) %>% -->
+
+<!--   # Agregar control de capas -->
+<!--   addLayersControl( -->
+<!--     baseGroups = c("OpenStreetMap", "CartoDB Positron", "Esri World Imagery"), -->
+<!--     overlayGroups = c("Jurisdicción CAR", "POMCA Río Bogotá", "Registro Incendios", "Elevación"), -->
+<!--     options = layersControlOptions(collapsed = FALSE) -->
+<!--   ) %>% -->
+
+<!--   # Ajustar la vista del mapa a los datos -->
+<!--   setView(lng = mean(st_coordinates(sf_obj_4326)[,1]),  -->
+<!--           lat = mean(st_coordinates(sf_obj_4326)[,2]), zoom = 8) -->
+
+
+<!-- ``` -->
+
+
+
+# 7. Conclusiones
+
+## Distribución de Incendios por Municipio:
+
+-   Los municipios Nilo, Caparrapí y Guaduas presentan las mayores áreas totales afectadas por incendios (superando las 1000 hectáreas).
+-   Por otro lado, Soacha lidera en términos de cantidad de incendios reportados, aunque el área afectada no es la más extensa.
+
+## Distribución Temporal:
+
+-   Se observa un incremento significativo en el número de incendios entre 2015 y 2019, siendo 2015 y 2019 los años más críticos.
+-   Existe una tendencia estacional clara en la cantidad de incendios y area afectada, con un pico significativo en los meses de agosto y septiembre.
+
+## Causas y Tipos de Áreas Afectadas:
+
+Las principales causas de incendios son:
+
+-   Quemas Agrícolas Fuera de Control y Descuido o Negligencia, representando las mayores áreas quemadas.
+-   Las áreas con vegetación herbácea, arbustos y bosques son las más afectadas, destacando la vulnerabilidad de ecosistemas naturales y agrícolas.
+-   Las categorías agrícolas y de conservación concentran la mayor extensión de áreas quemadas, evidenciando impactos en la producción y en zonas de relevancia ecológica.
+
+------------------------------------------------------------------------
+
+# Referencias
+
+-   **CAR - Gestión del Riesgo DGOAT**
+
+-   **Datos espaciales**: Colombia en Mapas <https://www.colombiaenmapas.gov.co/>
+
+-   **Jurisdicción CAR** : Corporación Autónoma Regional de Cundinamarca - CAR - V2 <https://datosgeograficos.car.gov.co/datasets/d42a06efae8c4f769da577c2d669c4d0_9/explore>

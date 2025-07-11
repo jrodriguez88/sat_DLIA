@@ -1,0 +1,127 @@
+---
+title: "Reporte de Capas Espaciales"
+author: "Jeferson Rodríguez-Espinoza"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    toc: true
+    toc_depth: 3
+    theme: yeti
+    number_sections: true
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo = TRUE,
+  message = FALSE,
+  warning = FALSE
+)
+getwd()
+
+path <- dirname(getwd())
+setwd(path)
+
+library(sf)
+library(dplyr)
+library(skimr)
+library(ggplot2)
+library(tmap)
+library(mapview)
+```
+
+# Carga de Capas
+
+```{r load_layers, include=FALSE}
+## Packages and dependencies
+source("requirements.R")
+
+## Internal functions
+source("src/funciones_sat_car.R")
+
+source("src/visor_car.R")
+geoCAR_layers$layer
+
+
+## Data Ingestion
+#sel_municipios <- c("RÁQUIRA")
+selected_vars <- read_csv("aux_files/geoambiental_car_select.csv")
+descarga_fuente <- FALSE
+dir_geocar <- "data/raw/car/" 
+source("src/ingest_layer_geocar_all.R")
+
+
+base_layers <- c(
+  "Límite Departamental",
+  "Municipios",
+  "Direcciones Regionales",
+  "Áreas Naturales Protegidas",
+  "Veredas",
+  "Drenaje Doble",
+#  "Drenaje sencillo",
+  "Embalse",
+#  "Vía",
+  "Cuencas CAR",
+  "Centro poblado DANE"
+)
+
+
+
+layers_mapa <- layers_geocar[base_layers] %>% 
+  map(~st_transform(.x, crs = 4326))
+```
+
+# Resumen y Plots por Capa
+
+```{r summary_plots, out.width="100%"}
+for (layer_name in names(layers_mapa)) {
+  sf_obj <- layers_mapa[[layer_name]]
+  cat("\n## ", layer_name, "\n\n")
+  
+  # 1. Resumen con skimr
+  print(skim(sf_obj))
+  
+  # 2. Selección heurística de campo para visualización
+  # sf_col <- attr(sf_obj, "sf_column")
+  # candidate_fields <- setdiff(names(sf_obj), sf_col)
+  # # Priorizar campos con pocos niveles o nombres descriptivos
+  # target <- candidate_fields[grepl("NOM|NAME|CATEGORIA|ID|COD", candidate_fields, ignore.case = TRUE)][1]
+  # if (is.na(target)) target <- candidate_fields[1]
+  
+  cat("\n\n**Geometría de la capa:**\n")
+  
+  
+  p <- ggplot() +
+    geom_sf(data = st_geometry(sf_obj)) +
+    labs(
+      title = layer_name
+    ) +
+    theme_minimal()
+  print(p)
+  cat("---")
+}
+
+```
+
+# Mapa Interactivo Global
+
+```{r interactive_map}
+# Cambiar a modo "view" para interacción
+tmap_mode("view")
+
+# Ejemplo de composición de capas con tmap
+tm <- tm_shape(layers_mapa[["Municipios"]]) +
+  tm_borders(lwd = 1, col = "#555555") +
+  tm_shape(layers_mapa[["Áreas Naturales Protegidas"]]) +
+  tm_fill("CATEGORIA", alpha = 0.6) +
+  tm_shape(layers_mapa[["Veredas"]] %>% filter(NOMBRE_VER == "CASCO URBANO")) +
+  tm_fill(col = "brown") +
+  tm_shape(layers_mapa[["Drenaje Doble"]]) +
+  tm_lines(col = "blue") +
+#  tm_shape(layers_mapa[["Vía"]]) +
+  tm_lines(col = "gray", lwd = 2)
+
+# Renderizar con mapview para exportar
+tm
+
+```

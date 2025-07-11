@@ -1,0 +1,346 @@
+---
+title: "Análisis Exploratorio de Eventos de Ocurrencia de Incendios"
+author: "Rodriguez-Espinoza, J."
+output:
+  html_document:
+    theme: cosmo
+    highlight: monochrome
+    toc: true
+    toc_depth: 4
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo       = TRUE,
+  message    = FALSE,
+  warning    = FALSE,
+  fig.width  = 8,
+  fig.height = 5
+)
+# Establecer directorio raíz al proyecto (carpeta padre de 'notebooks')
+knitr::opts_knit$set(root.dir = normalizePath(".."))
+```
+
+# 1. Introducción
+
+Este notebook integra y compara la ocurrencia de incendios en la jurisdicción de la CAR a partir de tres fuentes:
+
+-   **DGOAT CAR**: Puntos críticos de incendios (Septiembre 2024).
+-   **UNGRD**: Emergencias registradas por la Unidad Nacional para la Gestión del Riesgo de Desastres.
+-   **MODIS MCD64A1**: Producto satelital de áreas quemadas.
+
+**Objetivos**: 1. Cargar y limpiar cada fuente. 2. Calcular conteo de eventos y área anual por fuente. 3. Visualizar comparaciones temporales y espaciales.
+
+## 2. Configuración del entorno y librerías
+
+```{r load-libraries}
+library(terra)
+library(sf)
+library(tidyverse)
+library(readxl)
+library(skimr)
+library(leaflet)
+library(RColorBrewer)
+library(viridis)
+library(lubridate)
+library(patchwork)
+library(plotly)
+```
+
+## 3. Comprobación de rutas de datos
+
+```{r check-paths}
+# Rutas originales de archivos
+data_paths <- c(
+  "data/interm/base/jurisdiccion_car.gpkg",
+  "data/interm/base/municipios.gpkg",
+  "data/interm/eventos_ocurrencia/eventos_dgoat_geoambiental.gpkg",
+  "data/interm/eventos_ocurrencia/eventos_dgoat_interno.csv",
+  "data/interm/eventos_ocurrencia/eventos_ungrd_datosabiertos.csv",
+  "data/interm/eventos_ocurrencia/eventos_ungrd_gestiondelriesgo.csv",
+  "data/interm/satelital/modis_areas_quemadas.tif",
+  "data/interm/eventos_ocurrencia/eventos_modis_mcd64a1.gpkg"
+)
+for (fp in data_paths) {
+  if (!file.exists(fp)) stop(paste("Archivo no encontrado:", fp))
+}
+```
+
+## 4. Carga de capas base
+
+```{r load-base-layers}
+jurisdiccion_car <- terra::vect("data/interm/base/jurisdiccion_car.gpkg")
+municipios_car    <- sf::read_sf("data/interm/base/municipios.gpkg")
+
+plot(jurisdiccion_car, col = NA, lwd=2, border = "blue", main = "Jurisdicción CAR", )
+plot(sf::st_geometry(municipios_car), add = TRUE, border = "darkgrey")
+```
+
+## 5. Carga de datos de eventos
+
+```{r load-eventos}
+# DGOAT
+eventos_dgoat_geoambiental <- sf::read_sf("data/interm/eventos_ocurrencia/eventos_dgoat_geoambiental.gpkg")
+eventos_dgoat_interno      <- readr::read_csv("data/interm/eventos_ocurrencia/eventos_dgoat_interno.csv")
+
+# UNGRD
+eventos_ungrd_datos_abiertos   <- readr::read_csv("data/interm/eventos_ocurrencia/eventos_ungrd_datosabiertos.csv")
+eventos_ungrd_gestiondelriesgo <- readr::read_csv("data/interm/eventos_ocurrencia/eventos_ungrd_gestiondelriesgo.csv")
+
+# MODIS
+modis_areas_quemadas_raster <- terra::rast("data/interm/satelital/modis_areas_quemadas.tif")
+eventos_modis_mcd64a1       <- sf::read_sf("data/interm/eventos_ocurrencia/eventos_modis_mcd64a1.gpkg")
+```
+
+## 6. Inspección rápida de datos
+
+### 6.1 Registros DGOAT - Interno, Con Fecha Reporte
+
+```{r skim-data}
+skimr::skim(eventos_dgoat_interno)
+
+(eventos_dgoat_interno %>% group_by(Municipio) %>%
+  summarise(n = n(), area_total_afectada = sum(area_hectareas, na.rm = T)) %>%
+  arrange(desc(area_total_afectada)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, area_total_afectada), y = area_total_afectada)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Area afectada por Municipio", x = "Municipio", y = "Area total afectada (ha)")) +
+
+(eventos_dgoat_interno %>%
+  count(Municipio) %>% arrange(desc(n)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, n), y = n)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Registros por Municipio", x = "Municipio", y = "Cantidad de incendios"))
+
+```
+
+### 6.2 Registros UNGRD
+
+```{r skim-data2}
+
+skimr::skim(eventos_ungrd_gestiondelriesgo)
+
+(eventos_ungrd_gestiondelriesgo %>% group_by(municipio) %>%
+  summarise(n = n(), area_total_afectada = sum(area_hectareas, na.rm = T)) %>%
+  arrange(desc(area_total_afectada)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(municipio, area_total_afectada), y = area_total_afectada)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Area afectada por Municipio", x = "Municipio", y = "Area total afectada (ha)")) +
+
+(eventos_ungrd_gestiondelriesgo %>%
+  count(municipio) %>% arrange(desc(n)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(municipio, n), y = n)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Registros por Municipio", x = "Municipio", y = "Cantidad de incendios"))
+
+```
+
+### 6.3 Registros MODIS **MCD64A1**
+
+```{r skim-data3}
+
+skimr::skim(eventos_modis_mcd64a1)
+
+(eventos_modis_mcd64a1 %>% group_by(Municipio) %>%
+  summarise(n = n(), area_total_afectada = sum(area_afectada, na.rm = T)) %>%
+  arrange(desc(area_total_afectada)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, area_total_afectada), y = area_total_afectada)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Area afectada por Municipio", x = "Municipio", y = "Area total afectada (ha)")) +
+
+(eventos_modis_mcd64a1 %>%
+  count(Municipio) %>% arrange(desc(n)) %>% slice(1:20) %>%
+  ggplot(aes(x = reorder(Municipio, n), y = n)) +
+  geom_bar(stat = "identity", fill = "tomato") +
+  coord_flip() + theme_minimal() +
+  labs(title = "Registros por Municipio", x = "Municipio", y = "Cantidad de incendios"))
+
+```
+
+## 7. Preprocesamiento y unificación
+
+```{r preprocessing}
+clean_municipio <- function(x) {
+  stringi::stri_trans_general(x, "Latin-ASCII") %>% toupper()
+}
+
+# DGOAT
+res_dgoat <- eventos_dgoat_interno %>%
+  as_tibble() %>%
+  mutate(
+    Municipio = clean_municipio(Municipio),
+    year      = as.numeric(Año)
+  ) %>%
+  filter(Clase == "Incendio Forestal") %>%
+  group_by(Municipio, year) %>%
+  summarise(
+    n_dgoat    = n(),
+    area_dgoat = sum(area_hectareas, na.rm = TRUE),
+    .groups    = "drop"
+  )
+
+# UNGRD (portal gestión)
+res_ungdr <- eventos_ungrd_gestiondelriesgo %>%
+  as_tibble() %>%
+  mutate(
+    Municipio = clean_municipio(municipio),
+    year      = year(fecha)
+  ) %>%
+  group_by(Municipio, year) %>%
+  summarise(
+    n_ungdr    = n(),
+    area_ungdr = sum(area_hectareas, na.rm = TRUE),
+    .groups    = "drop"
+  )
+
+# MODIS
+res_modis <- eventos_modis_mcd64a1 %>%
+  as_tibble() %>%
+  mutate(
+    Municipio = clean_municipio(Municipio),
+    year      = year(fecha)
+  ) %>%
+  group_by(Municipio, year) %>%
+  summarise(
+    n_modis    = n(),
+    area_modis = sum(area_afectada, na.rm = TRUE),
+    .groups    = "drop"
+  )
+
+# Unión completa de fuentes
+test_data_events <- res_dgoat %>%
+  full_join(res_ungdr, by = c("Municipio", "year")) %>%
+  full_join(res_modis, by = c("Municipio", "year"))
+```
+
+## 8. Resumen anual global
+
+```{r resumen-anual, results='asis'}
+library(knitr)
+resumen_por_year <- test_data_events %>%
+  group_by(year) %>%
+  summarise(
+    total_n_dgoat    = sum(n_dgoat, na.rm = TRUE),
+    total_n_ungdr    = sum(n_ungdr, na.rm = TRUE),
+    total_n_modis    = sum(n_modis, na.rm = TRUE),
+    total_area_dgoat = sum(area_dgoat, na.rm = TRUE),
+    total_area_ungdr = sum(area_ungdr, na.rm = TRUE),
+    total_area_modis = sum(area_modis, na.rm = TRUE),
+    .groups = "drop"
+  )
+# Mostrar como tabla kable
+kable(
+  resumen_por_year,
+  caption = "Resumen anual global: número de eventos y área quemada por fuente",
+  col.names = c("Año", "Eventos DGOAT", "Eventos UNGRD", "Eventos MODIS", "Área DGOAT (ha)", "Área UNGRD (ha)", "Área MODIS (ha)"),
+  format = "html",
+  digits = 0
+)
+```
+
+## 9. Visualizaciones
+
+### 9.1 Área quemada por fuente
+
+```{r plot-area}
+df_area_long <- resumen_por_year %>%
+  pivot_longer(
+    cols        = starts_with("total_area"),
+    names_to    = "Fuente",
+    values_to   = "total_area",
+    names_prefix= "total_area_"
+  )
+
+p_fuente <- ggplot(df_area_long, aes(x = year, y = total_area, color = Fuente)) +
+  geom_line(size = 1) +
+  geom_point(size = 2) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(
+    title    = "Área acumulada quemada por fuente",
+    subtitle = "DGOAT vs UNGRD vs MODIS",
+    x        = "Año",
+    y        = "Área (ha)"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(p_fuente)
+```
+
+### 9.2 Conteo de eventos anual
+
+```{r plot-events}
+df_events_long <- resumen_por_year %>%
+  pivot_longer(
+    cols        = starts_with("total_n"),
+    names_to    = "Fuente",
+    values_to   = "total_events",
+    names_prefix= "total_n_"
+  )
+
+p_count <- ggplot(df_events_long, aes(x = factor(year), y = total_events, fill = Fuente)) +
+  geom_col(position = position_dodge()) +
+  scale_y_continuous(labels = scales::label_comma()) +
+  labs(
+    title = "Conteo anual de eventos por fuente",
+    x     = "Año",
+    y     = "Número de eventos"
+  ) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(p_count)
+```
+
+### 9.3 Mapa interactivo de incendios
+
+```{r mapa-interactivo, echo=FALSE}
+# Asegurar que ambos objetos sf estén en WGS84 (CRS geográfico)
+library(sf)
+eventos_dgoat_interno <- st_transform(st_as_sf(eventos_dgoat_interno, coords = c("Este", "Norte"), crs = 3116), crs = 4326)
+eventos_modis_mcd64a1       <- st_transform(eventos_modis_mcd64a1,       crs = 4326)
+
+leaflet() %>%
+  # Mapas base
+  addProviderTiles(providers$OpenStreetMap, group = "OpenStreetMap") %>%
+  addProviderTiles(providers$CartoDB.Positron, group = "CartoDB Positron") %>%
+  #addProviderTiles(providers$Stamen.TonerLite, group = "Stamen Toner Lite") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Esri World Imagery") %>%
+  # Puntos DGOAT
+  addCircleMarkers(
+    data        = eventos_dgoat_interno,
+    radius      = 4,
+    color       = "red",
+    stroke      = FALSE,
+    fillOpacity = 0.6,
+    group       = "DGOAT",
+    label       = ~paste0(Municipio, ": ", Fecha_reporte, " - Area afectada: ", area_hectareas)
+  ) %>%
+  # Puntos MODIS
+  addCircleMarkers(
+    data        = eventos_modis_mcd64a1,
+    radius      = 3,
+    color       = "orange",
+    stroke      = FALSE,
+    fillOpacity = 0.6,
+    group       = "MODIS",
+    label       = ~paste0(Municipio, ": ", fecha, " - Area afectada: ", area_afectada, " hectareas")
+  ) %>%
+  addLayersControl(
+    baseGroups = c("OpenStreetMap", "CartoDB Positron", "Esri World Imagery"),
+    overlayGroups = c("DGOAT", "MODIS"),
+    options       = layersControlOptions(collapsed = FALSE)
+  )
+```
+
+## 10. Conclusiones y próximos pasos
+
+-   Se evidencian diferencias entre fuentes: **DGOAT** (detalle espacial), **UNGRD** (registro administrativo), **MODIS** (detección satelital).\
+-   Validar superposición espacial y análisis de concordancia.\
+-   Incorporar datos VIIRS para mayor resolución temporal.

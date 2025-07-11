@@ -110,7 +110,7 @@ eventos_criticos
 
 eventos_criticos %>%
   ggplot(aes(x = factor(Año))) +
-  geom_bar(color = "black", fill = "tomato") +
+  geom_bar(color = "black", fill = "gray") +
   labs(title = "Distribución de incendios por año", x = "Año", y = "Cantidad de incendios") +
   theme_minimal()
 
@@ -154,7 +154,7 @@ ggplot() +
   geom_sf(data = areas_protegidas, fill = "darkgreen") +
   geom_sf(data = veredas, color = "darkgrey", fill = NA) +
   geom_sf(data = eventos_criticos, color = "black", size = 2, shape = 15) +
-  geom_sf(data = municipio, color = "red", linewidth = 1, fill = NA) + 
+  geom_sf(data = municipios, color = "red", linewidth = 1, fill = NA) + 
 #  geom_sf_text(data = st_centroid(veredas), aes(label = NOMBRE_VER), size = 2.5) +
 #  geom_sf_label(areas_protegidas, aes(label = NOMBRE)) +
 #  geom_sf(data = centro_poblado, fill = "brown") +
@@ -220,7 +220,7 @@ paleta_clc <- c(
   "Mosaico de pastos con espacios naturales"   = "#E6E64D", # CLC 231 (230,230,77) :contentReference[oaicite:23]{index=23}
   "Zonas pantanosas"                          = "#A6A6FF",  # CLC 411 (166,166,255) :contentReference[oaicite:24]{index=24}
   "Mosaico de pastos y espacios naturales"   = "#E6E64D",
-   "Turberas"                                   = "#4D4DFF",  # CLC 412 (77,77,255) :contentReference[oaicite:25]{index=25}
+  "Turberas"                                   = "#4D4DFF",  # CLC 412 (77,77,255) :contentReference[oaicite:25]{index=25}
   "Vegetacion acuatica sobre cuerpos de agua" = "#80F2E6",  # CLC 512 (128,242,230) :contentReference[oaicite:26]{index=26}
   "Rio"                                       = "#00CCF2",  # CLC 511 (0,204,242) :contentReference[oaicite:27]{index=27}
   "Canales"                                   = "#00CCF2",  # CLC 511 (0,204,242) :contentReference[oaicite:28]{index=28}

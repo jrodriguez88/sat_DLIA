@@ -101,16 +101,16 @@ if(isTRUE(descarga_fuente)){
 
 
 
-## Puntos criticos 
-layer_incendios <- "Riesgos - Registros de eventos"
-id_layer_incendios <- which(geoCAR_layers$layer == layer_incendios)
-# 
-# # Descarga mapa geoservicios CAR
-layers_eventos_dgoat <- load_arcgis_layer(service_url = geoCAR_layers$url_service[id_layer_incendios],
-                                          layer_id = geoCAR_layers$id[id_layer_incendios],
-                                          layer_name =  geoCAR_layers$layer[id_layer_incendios],
-                                          epsg = geoCAR_layers$EPSG[id_layer_incendios])
-# 
+# ## Puntos criticos 
+# layer_incendios <- "Riesgos - Registros de eventos"
+# id_layer_incendios <- which(geoCAR_layers$layer == layer_incendios)
+# # 
+# # # Descarga mapa geoservicios CAR
+# layers_eventos_dgoat <- load_arcgis_layer(service_url = geoCAR_layers$url_service[id_layer_incendios],
+#                                           layer_id = geoCAR_layers$id[id_layer_incendios],
+#                                           layer_name =  geoCAR_layers$layer[id_layer_incendios],
+#                                           epsg = geoCAR_layers$EPSG[id_layer_incendios])
+# # 
 
 
 

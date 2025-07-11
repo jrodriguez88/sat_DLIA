@@ -19,7 +19,7 @@ path <- dirname(getwd())
 # path <- getwd()
 
 
-fuel_bed_car <- rast(file.path(path, "data/interm/fuel_bed_car_ID.tif"))
+fuel_bed_car <- rast(file.path(path, "data/interm/combustible/fuel_bed_car_ID.tif"))
 
 
 fuel_bed_parameters <- readxl::read_excel(file.path(path, "data/raw/pettinari2015/Global_fuelbeds_parameters_v1.2.xlsx"), 
