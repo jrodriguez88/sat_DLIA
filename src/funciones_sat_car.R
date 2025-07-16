@@ -443,7 +443,7 @@ cleaning_puntos_criticos <- function(puntos_criticos_layer, clase = c("Incendio 
   # Fecha_reporte = `Fecha Reporte`,
   
   puntos_criticos_layer %>% filter(Clase %in% clase) %>%
-    select(Municipio, `Vereda_Localidad`, Año, Este, Norte, Altura,`Nombre_Punto`,  Clase,  `Causas_Tipos`, Categoria, Subcategoria,`Area_Afectada_Ha`) %>%
+    select(Municipio, `Vereda_Localidad`, `Año`, Este, Norte, Altura,`Nombre_Punto`,  Clase,  `Causas_Tipos`, Categoria, Subcategoria,`Area_Afectada_Ha`) %>%
     mutate(class_area = 
              case_when(
                str_detect(`Area_Afectada_Ha`, pattern = "m2|metros cuadrados") ~ "m2",

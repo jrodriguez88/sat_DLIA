@@ -106,7 +106,7 @@ library(sf)
 library(tmap)
 
 dir.create("data/raw/ideam/coberturas")
-dir.create("data/interm/coberturas")
+dir.create(dir_coberturas)
 
 # 2. Obtener los índices con map_dbl (devuelve numérico) o map_int (entero)
 id_layers_mapa <- which(geoCAR_layers$layer == "Direcciones Regionales")
@@ -134,12 +134,12 @@ path_list <- list(
 
 # poly_shp <- caqueta_shp
 
+## Elegir uno 
 
-
-clc_data <- vect(path_shp_clc_2000_2002)
-clc_data <- vect(path_shp_clc_2005_2009)
-clc_data <- vect(path_shp_clc_2010_2012)
-clc_data <- vect(path_shp_clc_2018)
+# clc_data <- vect(path_shp_clc_2000_2002)
+# clc_data <- vect(path_shp_clc_2005_2009)
+# clc_data <- vect(path_shp_clc_2010_2012)
+# clc_data <- vect(path_shp_clc_2018)
 clc_data <- vect(path_shp_clc_2020)
 
 
@@ -209,7 +209,7 @@ writeVector(clc_recortado, "data/interm/coberturas/clc_car_2005_2009_2.gpkg", ov
 
 clc_recortado
 
-}
+
 
 # Cargar el shapefile usando sf
 cobertura <- st_read("data/interm/coberturas/clc_car_2000_2002.gpkg")

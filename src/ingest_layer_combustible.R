@@ -2,16 +2,18 @@
 # library(tidyverse)
 # library(sf)
 
+# dir_combustible <- "data/interm/combustible/"
+dir.create(dir_combustible)
 
-jurisdiccion_car <- vect("data/raw/car/11_direcciones_regionales.gpkg")
-
-
-jurisdiccion_car_4326 <- st_transform(st_as_sf(jurisdiccion_car), crs = 4326) %>%
-  group_by(Direccion) %>%
-  summarise(geometry = st_union(geometry))
+# jurisdiccion_car <- vect("data/raw/car/11_direcciones_regionales.gpkg")
 
 
-buffer_jurisdiccion <- st_buffer(st_union(jurisdiccion_car_4326), dist = 20000)
+# jurisdiccion_car_4326 <- st_transform(st_as_sf(jurisdiccion_car), crs = 4326) %>%
+#   group_by(Direccion) %>%
+#   summarise(geometry = st_union(geometry))
+
+
+buffer_jurisdiccion <- st_buffer(st_union(jurisdiccion_car), dist = 20000)
 
 # plot(buffer_jurisdiccion)
 # lines(jurisdiccion_car_4326)
@@ -28,7 +30,7 @@ fuel_bed <- rast(tile3)
 #                          method = "near")
 
 # 3. Recortar y enmascarar a tu vector de jurisdicción
-fuel_bed_car <- crop(fuel_bed, jurisdiccion_car_4326, mask = TRUE)
+fuel_bed_car <- crop(fuel_bed, jurisdiccion_car, mask = TRUE)
 
 # 4. Comprobar que tus valores están intactos
 # unique(values(fuel_bed_car))
@@ -39,7 +41,7 @@ fuel_bed_car <- crop(fuel_bed, jurisdiccion_car_4326, mask = TRUE)
 #   crop(jurisdiccion_car, mask = T)
 
 
-writeRaster(fuel_bed_car, "data/interm/fuel_bed_car_ID.tif", overwrite = TRUE)
+writeRaster(fuel_bed_car, paste0(dir_combustible, "fuel_bed_car_ID.tif"), overwrite = TRUE)
 
 # plot(fuel_bed_car)
 # plot(as.factor(fuel_bed_car))
@@ -171,23 +173,22 @@ raster_combust <- setNames(raster_combust, names(params_df)[c(2, 4:67)])
 all_rast <- rast(raster_combust)
 names(all_rast) <- names(params_df)[c(2, 4:67)]
 
-writeRaster(all_rast, filename = "data/interm/fuel_bed_car_all.tif", datatype = "FLT4S", overwrite = TRUE)
+writeRaster(all_rast, filename = paste0(dir_combustible, "fuel_bed_car_all.tif"), datatype = "FLT4S", overwrite = TRUE)
 
 
 # saveRDS(rast(raster_combust), "data/interm/fuelbeds.rds")
 # r2 <- readRDS("data/interm/fuelbeds.rds")
 
 
-
-dir.create("data/interm/combustible")
 names_rast_comb <- paste0(str_replace_all(names(params_df)[c(2, 4:67)], " ", "_"), ".tif") %>% 
   str_replace_all("#", "No") %>% str_replace_all("/", "_per_")
+
 map2(.x = raster_combust, .y = names_rast_comb,
-     ~writeRaster(.x, filename = paste0("data/interm/combustible/", .y), overwrite = T))
+     ~writeRaster(.x, filename = paste0(dir_combustible, .y), overwrite = T))
 
 
-par(mfrow = c(2, 2))
-map2(raster_combust, names(params_df)[c(2, 4:67)], ~plot(.x, main=.y, type="classes"))
+# par(mfrow = c(2, 2))
+# map2(raster_combust, names(params_df)[c(2, 4:67)], ~plot(.x, main=.y, type="classes"))
 # dev.off()
 
 

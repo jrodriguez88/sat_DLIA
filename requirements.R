@@ -14,6 +14,8 @@ library(readxl)
 library(tidyverse)
 library(sf)
 library(viridis)
+library(stringi)
+library(scales)
 
 # creacion mapas y graficos
 library(patchwork)
@@ -22,5 +24,7 @@ library(RColorBrewer)
 library(tmap)      # mapeo temático
 library(grid) 
 library(htmlwidgets)
+
+
 
 
