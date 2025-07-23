@@ -1,5 +1,7 @@
 ## Variables de Terreno basadas en DEM - NASADEM
 
+dir.create(dir_terreno)
+
 terrain_files <- list.files("data/raw/nasa/NASADEM/", full.names = TRUE)
 
 # ## Jurisdiccion
@@ -13,7 +15,7 @@ rast_terrain <- map(terrain_files, rast) %>%
 
 # names(rast_terrain)
 
-plot(rast(rast_terrain))
+# plot(rast(rast_terrain))
 #lines(jurisdiccion_car)
 # plot(crop(rast_terrain, jurisdiccion_car, mask= T))
 

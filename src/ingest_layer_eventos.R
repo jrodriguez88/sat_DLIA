@@ -7,7 +7,7 @@
 dir.create(dir_eventos)
 
 # dir_satelital <- "data/interm/satelital/"
-dir.create(dir_satelital)
+# dir.create(dir_satelital)
 
 ## Puntos criticos
 layer_incendios <- "Riesgos - Registros de eventos"
@@ -136,7 +136,7 @@ eventos_ungrd_gestiondelriesgo %>%
 
 
 
-### Modis
+### Modis  
 
 list_files_layers <- list.files("data/raw/modis/MCD64A1/", pattern = ".tif$", full.names = TRUE) 
 
@@ -178,7 +178,7 @@ fechas <- as.Date(names(burn_rasters_car), format="%Y-%m-%d")
 names(burn_rasters_car) <- fechas
 
 
-writeRaster(burn_rasters_car, filename = paste0(dir_satelital, "modis_areas_quemadas.tif"), overwrite=TRUE)
+writeRaster(burn_rasters_car, filename = paste0(dir_eventos, "modis_areas_quemadas.tif"), overwrite=TRUE)
 
 #burn_rasters_car <- project(burn_rasters_car, crs(eventos_dgoat) , method = "near")
 

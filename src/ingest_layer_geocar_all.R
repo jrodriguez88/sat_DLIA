@@ -87,14 +87,14 @@ if(isTRUE(descarga_fuente)){
   
 } else {
   
-  files_in_folder <- read_csv(list.files(dir_geocar, full.names = TRUE, pattern = "csv$"))
+  files_in_geocar <- read_csv(list.files(dir_geocar, full.names = TRUE, pattern = "csv$"))
   
  
-  layers_geocar <- map(paste0(dir_geocar, files_in_folder$file_name),
-                        st_read) %>% setNames(files_in_folder$layer)
+  # layers_geocar <- map(paste0(dir_geocar, files_in_folder$file_name),
+  #                       st_read) %>% setNames(files_in_folder$layer)
+  # 
   
-  
-  message(paste0(nrow(files_in_folder), " Entidades espaciales importadas desde : ", dir_geocar))
+  message(paste0(nrow(files_in_geocar), " Entidades espaciales importadas desde : ", dir_geocar))
   
 }
 

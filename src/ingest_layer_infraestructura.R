@@ -2,7 +2,7 @@
 
 
 
-
+dir.create(dir_infraestructura)
 
 # https://geo.upme.gov.co/server/rest/services/Capas_EnergiaElectrica
 # https://geo.upme.gov.co/server/rest/services/Capas_EnergiaElectrica/Sistema_transmision_lineas_construidas/FeatureServer/17
@@ -16,7 +16,7 @@ epsg <- 9377
 
 lineas_electricas <- load_arcgis_layer(service_upme, id, name, epsg)
 
-plot(lineas_electricas %>% select(sistema))
+plot(lineas_electricas %>% dplyr::select(sistema))
 
 
 
@@ -24,7 +24,7 @@ plot(lineas_electricas %>% select(sistema))
 
 # 2. Validar y reparar
 if (any(!st_is_valid(lineas_electricas))) {
-  clc_sf <- st_make_valid(clc_sf)
+  lineas_electricas <- st_make_valid(lineas_electricas)
 }
 
 # 3. Reproyectar
@@ -35,5 +35,6 @@ lineas_recortado_sf <- st_intersection(lineas_sf, jurisdiccion_car)
 
 # 5. Guardar
 st_write(lineas_recortado_sf,
-         paste0("data/interm/infraestructura/lineas_electricas_car_", "upme", ".gpkg"),
+         paste0(dir_infraestructura, "lineas_electricas_car_", "upme", ".gpkg"),
          delete_layer = FALSE)
+

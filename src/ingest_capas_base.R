@@ -16,10 +16,16 @@ base_layers <- c(
 
 
 
-layers_mapa <- layers_geocar[base_layers] %>% 
+# layers files_in_folder$layer[files_in_folder$layer %in% base_layers]
+
+
+files_in_folder_sel <- files_in_geocar %>% dplyr::filter(layer %in% base_layers)
+
+layers_mapa <- map(paste0(dir_geocar, files_in_folder_sel$file_name),
+                   st_read) %>% setNames(files_in_folder_sel$layer) %>% 
   map(~st_transform(.x, crs = 4326))
-names(layers_mapa)
-layers_mapa %>% map(names)
+# names(layers_mapa)
+# layers_mapa %>% map(names)
 
 # Area de jurisdiccion de la CAR
 jurisdiccion_car <- layers_mapa[["Direcciones Regionales"]]
