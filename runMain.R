@@ -46,6 +46,8 @@ mapa_test_base
 
 
 ## Ingest data Infraestructura ----
+# https://geo.upme.gov.co/server/rest/services/Capas_EnergiaElectrica/Sistema_transmision_lineas_construidas/FeatureServer/17
+
 dir_infraestructura <- "data/interm/infraestructura/"
 source("src/ingest_layer_infraestructura.R")
 plot(jurisdiccion_car["Direccion"] %>% vect())
@@ -57,6 +59,12 @@ lines(lineas_recortado_sf , col = "red")
 # Datos provenientes de DGOAT-CAR, UNGRD y MODIS MCD64A1
 dir_eventos <- "data/interm/eventos_ocurrencia/"
 source("src/ingest_layer_eventos.R")
+naniar::miss_var_summary(test_data_events)
+naniar::vis_miss(ungroup(test_data_events))
+naniar::miss_var_table(ungroup(test_data_events))
+naniar::gg_miss_fct(ungroup(test_data_events) %>% 
+                      dplyr::select(-year, -contains("n_")), 
+            fct = Municipio)
 grafico_numero_eventos
 grafico_area_eventos
 
@@ -97,7 +105,7 @@ source("src/ingest_layer_terreno.R")
 plot(rast(rast_terrain))
 
 
-### NDVI from MODIS 
+### NDVI from MODIS ----
 # GEE usado para descarga, corte y preprocesamiento
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD13A1?hl=es-419
 dir_vegetacion_index <- "data/interm/veg_index"
@@ -105,17 +113,27 @@ source("ingest_layer_ndvi.R")
 plot(rast_ndvi)
 
 
+### Informacion Meteorologica de IDEAM
+dir_meteo <- "data/interm/meteorologicos/"
+source("src/ingest_layer_meteo.R")
+plot(humedad_rel[[time(humedad_rel) %>% str_detect("2019")]])
+
 
 
 
 
 ## Ingest Socioeconomic Data
+# Integra datos de indicadores y variables socioeconomicas por municipio. Fuente DANE, 
 dir_socioeconomic <- "data/interm/socioeconomica/"
-source("src/ingest_layer_socioeconomic")
-
+source("src/ingest_layer_socioeconomica.R")
+plot(socioeconomic_data_spatial[8:13])
+# plot(socioeconomic_data_spatial[8])
 
 
 ## Map plot - Mapas para analisis y Plotter ----
+# Scripts para contruir mapas dinamicos par analisis de teritorio o municipio
+# Crea mapas en tamaño de impresion A0
+
 sel_municipios <- c("NILO")
 source("src/MAP_incendios_taller.R")
 source("src/MAP_incendios_taller_plotter.R")
@@ -126,3 +144,11 @@ source("src/MAP_incendios_taller_plotter.R")
 
 ## Rasterize layer to model
 # source("src/rasterize_layers.R")
+
+
+## Siguientes pasos :: Extraccion de datos por puntos de ocurrencia de incendios 
+# Evaluar modelos de respuesta presencia ausencia, Maxent, RF, etc 
+
+
+
+

@@ -16,7 +16,7 @@ epsg <- 9377
 
 lineas_electricas <- load_arcgis_layer(service_upme, id, name, epsg)
 
-plot(lineas_electricas %>% dplyr::select(sistema))
+# plot(lineas_electricas %>% dplyr::select(sistema))
 
 
 
@@ -36,5 +36,5 @@ lineas_recortado_sf <- st_intersection(lineas_sf, jurisdiccion_car)
 # 5. Guardar
 st_write(lineas_recortado_sf,
          paste0(dir_infraestructura, "lineas_electricas_car_", "upme", ".gpkg"),
-         delete_layer = FALSE)
+         append = FALSE)
 

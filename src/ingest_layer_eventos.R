@@ -240,14 +240,15 @@ left_join(
     filter(Clase == "Incendio Forestal") %>% 
   group_by(Municipio, year = as.numeric(`Año`)) %>% 
   summarise(n_dgoat = n(),
-            area_dgoat = sum(area_hectareas, na.rm = TRUE)) %>%
+            area_dgoat = sum(area_hectareas, na.rm = TRUE), .groups = 'drop') %>%
   arrange(year), 
   
   eventos_ungrd_gestiondelriesgo %>% tibble() %>% 
     mutate(Municipio = stri_trans_general(municipio, "Latin-ASCII") %>% toupper()) %>%
     group_by(Municipio, year) %>% 
   summarise(n_ungdr = n(), 
-            area_ungdr = sum(area_hectareas, na.rm = TRUE))
+            area_ungdr = sum(area_hectareas, na.rm = TRUE), .groups = 'drop'), 
+  join_by(Municipio, year)
 ) %>% 
   left_join(
     modis_points %>%
@@ -255,17 +256,18 @@ left_join(
     mutate(Municipio = stri_trans_general(Municipio, "Latin-ASCII") %>% toupper()) %>%
     group_by(Municipio, year = year(fecha)) %>% 
   summarise(n_modis = n(), 
-            area_modis = sum(area_afectada , na.rm = TRUE))
+            area_modis = sum(area_afectada , na.rm = TRUE), .groups = 'drop'), 
+  join_by(Municipio, year)
 ) -> test_data_events
 
 
-view(test_data_events)
+print(test_data_events)
 
 
 # test_data_events %>% drop_na(area_modis) %>% arrange(desc(year)) %>% view()
 
 
-plot(test_data_events)
+# plot(test_data_events)
 
 
 
