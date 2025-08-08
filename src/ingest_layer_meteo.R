@@ -28,7 +28,7 @@ names(files) <- sufijos
 # dir_meteo <- "data/interm/meteorologicos"
 if (!dir.exists(dir_meteo)) dir.create(dir_meteo, recursive = TRUE)
 # 4. Función para procesar un único archivo
-procesa_ideam <- function(ruta_nc, sufijo, aoi) {
+procesa_ideam <- function(ruta_nc, sufijo, aoi, out_dir) {
   # lee todo el stack
   r <- rast(ruta_nc)
   
@@ -36,7 +36,7 @@ procesa_ideam <- function(ruta_nc, sufijo, aoi) {
   r_c <- crop(r, aoi)
   
   # enmascara para dejar sólo los píxeles dentro de la CAR
-  r_m <- mask(r_c, jurisdiccion)
+  r_m <- mask(r_c, aoi)
   
   # arma nombre de salida (GeoTIFF)
   out_file <- file.path(out_dir, paste0("ideam_", sufijo, "_mensual.tif"))
@@ -46,13 +46,13 @@ procesa_ideam <- function(ruta_nc, sufijo, aoi) {
 }
 
 # 5. Itera sobre todos los archivos
-imap(files, ~ procesa_ideam(.x, .y, jurisdiccion_car))
+imap(files, ~ procesa_ideam(.x, .y, jurisdiccion_car, dir_meteo))
 
 
-precipitacion <- rast("data/interm/meteorologicos/ideam_precipitacion_mensual.tif")
-temp_max <- rast("data/interm/meteorologicos/ideam_tmax_mensual.tif")
-temp_min <- rast("data/interm/meteorologicos/ideam_tmin_mensual.tif")
-humedad_rel <- rast("data/interm/meteorologicos/ideam_humd_mensual.tif")
+precipitacion <- rast(paste0(dir_meteo, "ideam_precipitacion_mensual.tif"))
+temp_max <- rast(paste0(dir_meteo, "ideam_tmax_mensual.tif"))
+temp_min <- rast(paste0(dir_meteo, "ideam_tmin_mensual.tif"))
+humedad_rel <- rast(paste0(dir_meteo, "ideam_humd_mensual.tif"))
 # boxplot(rast("data/interm/meteorologicos/ideam_precipitacion_mensual.tif")[[150]])
 
 # precipitacion[[516]]

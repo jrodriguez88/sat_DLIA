@@ -31,10 +31,10 @@ if (any(!st_is_valid(lineas_electricas))) {
 lineas_sf <- st_transform(lineas_electricas, st_crs(jurisdiccion_car))
 
 # 4. Recortar (topológico)
-lineas_recortado_sf <- st_intersection(lineas_sf, jurisdiccion_car)
+lineas_electricas <- st_intersection(lineas_sf, jurisdiccion_car)
 
 # 5. Guardar
-st_write(lineas_recortado_sf,
+st_write(lineas_electricas,
          paste0(dir_infraestructura, "lineas_electricas_car_", "upme", ".gpkg"),
          append = FALSE)
 

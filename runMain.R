@@ -8,7 +8,6 @@
 # Contiene el flujo de trabajo de ingestion de diferentes fuentes de datos requeridos para el desarrollo del sistema
 
 
-
 ## Packages and dependencies ----
 # Carga librerias necesarias para las tareas del workflow, 
 source("requirements.R")
@@ -108,18 +107,16 @@ plot(rast(rast_terrain))
 ### NDVI from MODIS ----
 # GEE usado para descarga, corte y preprocesamiento
 # https://developers.google.com/earth-engine/datasets/catalog/MODIS_061_MOD13A1?hl=es-419
-dir_vegetacion_index <- "data/interm/veg_index"
-source("ingest_layer_ndvi.R")
-plot(rast_ndvi)
+dir_modis_ndvi <- "data/interm/satelital/modis_ndvi/"
+source("src/ingest_layer_ndvi.R")
+plot(ndvi_car[[names(ndvi_car) %>% str_detect("2019")]])
 
 
 ### Informacion Meteorologica de IDEAM
+# Cubo de datos - http://archivo.ideam.gov.co/web/tiempo-y-clima/clima
 dir_meteo <- "data/interm/meteorologicos/"
 source("src/ingest_layer_meteo.R")
 plot(humedad_rel[[time(humedad_rel) %>% str_detect("2019")]])
-
-
-
 
 
 ## Ingest Socioeconomic Data

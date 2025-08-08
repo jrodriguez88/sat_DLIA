@@ -42,20 +42,23 @@ layer_seleccionadas <- c(
 
 
 
-# reombra y reprojecta
-# layers_mapa <- setNames(layers_mapa, layer_names) %>% map(~st_transform(.x, crs = 4326))
-
-layers_mapa <- layers_geocar[layer_seleccionadas] %>% 
-  map(~st_transform(.x, crs = 4326))
-names(layers_mapa)
-layers_mapa %>% map(names)
+# # reombra y reprojecta
+# # layers_mapa <- setNames(layers_mapa, layer_names) %>% map(~st_transform(.x, crs = 4326))
+# 
+# layers_mapa <- layers_geocar[layer_seleccionadas] %>% 
+#   map(~st_transform(.x, crs = 4326))
+# names(layers_mapa)
+# layers_mapa %>% map(names)
 
 # Area de jurisdiccion de la CAR
-jurisdiccion_car <- layers_mapa[["Direcciones Regionales"]]
+# jurisdiccion_car <- layers_mapa[["Direcciones Regionales"]]
 
-DEM <- geodata::elevation_30s(country = "COL", path=tempdir())
-municipio_dem <- crop(project(DEM, crs(jurisdiccion_car)), jurisdiccion_car, mask = T)
+# DEM <- geodata::elevation_30s(country = "COL", path=tempdir())
+# municipio_dem <- crop(project(DEM, crs(jurisdiccion_car)), jurisdiccion_car, mask = T)
 
+
+
+car_dem <- rast_terrain[[1]]
 # layers_mapa[["Ecosistemas - IDEAM año 2017"]]$COBERTURA %>% unique()
 
 
@@ -64,7 +67,7 @@ if(!is.null(sel_municipios)){
   municipios_crop <- layers_mapa[["Municipios"]] %>% 
     filter(Municipio %in% sel_municipios)
   
-  municipio_dem <-  crop(project(DEM, crs(municipios_crop)), municipios_crop, mask = T)
+  municipio_dem <-  crop(car_dem, vect(municipios_crop), mask = T)
   
   
   layers_mapa <- layers_mapa %>%
@@ -96,7 +99,7 @@ municipio <- layers_mapa[["Municipios"]]
 centro_poblado <- layers_mapa[["Centro poblado DANE"]]
 veredas <- layers_mapa[["Veredas"]]
 areas_protegidas <- layers_mapa[["Áreas Naturales Protegidas"]]
-cuencas <- layers_mapa[["Veredas"]]
+# cuencas <- layers_mapa[["Veredas"]]
 ecosistemas <- layers_mapa[["Ecosistemas - IDEAM año 2017"]]
 
 rios <- layers_mapa[["Drenaje Doble"]]
@@ -245,8 +248,8 @@ paleta_clc_map <- colorFactor(
 )
 
 # 3. Verificar que 'Rio' coincide:
-paleta_clc_map("Vegetacion secundaria") 
-
+# paleta_clc_map("Vegetacion secundaria") 
+# "#A6F668"
 
 # Ver la paleta
 # Si ya tienes paleta_clc con nombres idénticos a categorias
@@ -393,7 +396,7 @@ mapa_dyn <-leaflet() %>%
 # 2. Guardar como HTML autosuficiente
 saveWidget(
   widget     = mapa_dyn,
-  file       = "mapas/mapa_leaflet.html",
+  file       = paste0("mapas/mapa_leaflet_", sel_municipios, ".html")
   selfcontained = TRUE, 
 )
 

@@ -45,7 +45,7 @@ centro_poblados <- layers_mapa[["Veredas"]] %>% filter(NOMBRE_VER == "CASCO URBA
 veredas <- layers_mapa[["Veredas"]]
 areas_protegidas <- layers_mapa[["Áreas Naturales Protegidas"]]
 cuencas <- layers_mapa[["Cuencas CAR"]]
-denaje_doble <- layers_mapa[["Drenaje Doble"]]
+drenaje_doble <- layers_mapa[["Drenaje Doble"]]
 drenaje_sencillo <- layers_mapa[["Drenaje sencillo"]]
 embalses <- layers_mapa[["Embalse"]]
 vias <- layers_mapa[["Vía"]] %>% filter(TIPO_VIA  %in% c(1:4))
