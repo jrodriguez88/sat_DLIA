@@ -50,7 +50,7 @@ mapa_test_base
 dir_infraestructura <- "data/interm/infraestructura/"
 source("src/ingest_layer_infraestructura.R")
 plot(jurisdiccion_car["Direccion"] %>% vect())
-lines(lineas_recortado_sf , col = "red")
+lines(lineas_electricas , col = "red")
 
 
 ## Data Ingestion Eventos - Incendios ----
@@ -127,13 +127,14 @@ plot(socioeconomic_data_spatial[8:13])
 # plot(socioeconomic_data_spatial[8])
 
 
+
 ## Map plot - Mapas para analisis y Plotter ----
 # Scripts para contruir mapas dinamicos par analisis de teritorio o municipio
 # Crea mapas en tamaño de impresion A0
 
-sel_municipios <- c("NILO")
-source("src/MAP_incendios_taller.R")
-source("src/MAP_incendios_taller_plotter.R")
+# sel_municipios <- c("NILO")
+# source("src/MAP_incendios_taller.R")
+# source("src/MAP_incendios_taller_plotter.R")
 
 
  ## Preprocess vector data

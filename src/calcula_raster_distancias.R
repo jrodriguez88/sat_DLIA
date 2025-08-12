@@ -12,6 +12,10 @@
 #    resol       : resolución de salida en metros (antes de reproyectar al AOI)
 #    method      : método de remuestreo para la proyección del ráster base
 #
+
+
+raster_base <- rast_terrain[[1]]
+
 crea_raster_distance <- function(raster_base,
                                  spatial_obj,
                                  aoi        = NULL,
@@ -124,7 +128,7 @@ dist_lineas_electricas <- crea_raster_distance(
 )
 
 
-plot(dist_lineas_electricas, main = "Distancia (m) a Areas protegidas")
+plot(dist_lineas_electricas, main = "Distancia (m) a Lineas Electricas")
 lines(lineas_electricas)
 
 
@@ -132,6 +136,10 @@ lines(lineas_electricas)
 ## Distancia vias primarias
 
 vias %>% dplyr::filter(TIPO_VIA == 1) %>% st_geometry() %>% plot
+lines(centro_poblados, col = "red")
+lines(jurisdiccion_car, col = "brown")
+
+
 
 dist_vias_primarias <- crea_raster_distance(
   raster_base = raster_base,   # tu ráster de elevación
@@ -142,7 +150,8 @@ dist_vias_primarias <- crea_raster_distance(
 
 
 plot(dist_vias_primarias, main = "Distancia (m) a Vias primarias")
-lines(vias %>% dplyr::filter(TIPO_VIA == 1))
+lines(vias %>% dplyr::filter(TIPO_VIA == 3))
+lines(jurisdiccion_car, col = "red")
 
 
 ## Distancia Embalses

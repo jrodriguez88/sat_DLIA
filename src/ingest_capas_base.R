@@ -62,7 +62,7 @@ mapa_test_base <- ggplot() +
   geom_sf(data = veredas, color = "darkgrey", fill = NA) +
   # geom_sf(data = eventos_criticos, color = "black", size = 1.5, shape = 15) +
   geom_sf(data = municipios, color = "red", linewidth = 1, fill = NA) + 
-  geom_sf(data = denaje_doble, color = "blue", linewidth = 1, fill = NA) + 
+  geom_sf(data = drenaje_doble, color = "blue", linewidth = 1, fill = NA) + 
   # geom_sf(data = vias, color = "gray", linewidth = 1, fill = NA) + 
   #  geom_sf_text(data = st_centroid(veredas), aes(label = NOMBRE_VER), size = 2.5) +
   #  geom_sf_label(areas_protegidas, aes(label = NOMBRE)) +
@@ -81,7 +81,7 @@ layers_to_save <- list(
   veredas            = veredas,
   areas_protegidas   = areas_protegidas,
   cuencas            = cuencas,
-  drenaje_doble      = denaje_doble,
+  drenaje_doble      = drenaje_doble,
   drenaje_sencillo   = drenaje_sencillo,
   embalses           = embalses,
   vias               = vias,
