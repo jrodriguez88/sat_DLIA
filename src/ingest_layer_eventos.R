@@ -24,6 +24,8 @@ layers_eventos_dgoat <- load_arcgis_layer(service_url = geoCAR_layers$url_servic
 
 #3 Eventos de incendios, ubicacion 
 
+write_csv(layers_eventos_dgoat %>% sf::st_drop_geometry(), file = "datos_DGOAT.csv")
+
 #3 Eventos de incendios, ubicacion
 
 eventos_dgoat_geoambiental <- cleaning_puntos_criticos(

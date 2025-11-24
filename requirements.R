@@ -24,6 +24,15 @@ library(RColorBrewer)
 library(tmap)      # mapeo temático
 library(grid) 
 library(htmlwidgets)
+library(hms)
+
+# Modeling and Machine Learning 
+library(tidymodels)
+library(ranger)
+library(vip)
+library(dbscan)   # para DBSCAN
+library(factoextra)
+
 
 
 

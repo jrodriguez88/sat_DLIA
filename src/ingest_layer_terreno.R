@@ -23,6 +23,8 @@ rast_terrain <- map(terrain_files, rast) %>%
 map2(rast_terrain, paste0(dir_terreno, names_to_save), 
      writeRaster, overwrite = TRUE)
 
+elevacion_car <- rast_terrain[[1]] %>% project(juris_proj)
+
 
 # plot(rast("data/interm/terreno/elevacion.tif"))
 

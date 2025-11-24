@@ -442,8 +442,33 @@ cleaning_puntos_criticos <- function(puntos_criticos_layer, clase = c("Incendio 
   
   # Fecha_reporte = `Fecha Reporte`,
   
-  puntos_criticos_layer %>% filter(Clase %in% clase) %>%
-    select(Municipio, `Vereda_Localidad`, `Año`, Este, Norte, Altura,`Nombre_Punto`,  Clase,  `Causas_Tipos`, Categoria, Subcategoria,`Area_Afectada_Ha`) %>%
+  puntos_criticos_layer %>% 
+    # filter(Clase %in% clase) %>%
+    # select(Municipio, `Vereda_Localidad`, `Año`, Este, Norte, Altura,`Nombre_Punto`,  Clase,  `Causas_Tipos`, Categoria, Subcategoria,`Area_Afectada_Ha`, Link) %>%
+    # mutate(class_area = 
+    #          case_when(
+    #            str_detect(`Area_Afectada_Ha`, pattern = "m2|metros cuadrados") ~ "m2",
+    #            TRUE ~ "ha")) %>%
+    # # mutate(Fecha_reporte = as.Date(`Fecha_reporte`)) %>%
+    # mutate(area1 = str_remove_all(`Area_Afectada_Ha`, "[aA-zZ]*")) %>%
+    # mutate(area1 = str_replace(area1, ",", ".")) %>%
+    # mutate(area1 = str_replace(area1, "[ ]+", ""),
+    #        area2 = parse_number(area1)) %>%
+    # mutate(class_area = ifelse(area2>500, "m2", class_area)) %>%
+    # mutate(area_metros = case_when(class_area == "m2" ~ area2,
+    #                                class_area == "ha" ~ area2*10000,
+    #                                TRUE ~ NA_real_),
+    #        area_hectareas = area_metros/10000) %>%
+    # mutate(across(.cols = c(Municipio, 
+    #                         Clase,
+    #                         Categoria, Subcategoria,
+    #                         `Causas_Tipos`), str_to_title)) %>%
+    # select(-c(`Area_Afectada_Ha`, class_area, area1, area2)) %>% 
+    # distinct()
+    filter(Clase %in% clase) %>%
+    dplyr::filter(Punto == "Identificacion") %>%  
+    dplyr::filter(Tipo_Documento %in% c("Informes Técnicos",  "Informe Técnico")) %>%
+    select(OBJECTID, Municipio, `Vereda_Localidad`, `Año`, Este, Norte, Altura,`Nombre_Punto`,  Clase,  `Causas_Tipos`, Categoria, Subcategoria,`Area_Afectada_Ha`, Link) %>%
     mutate(class_area = 
              case_when(
                str_detect(`Area_Afectada_Ha`, pattern = "m2|metros cuadrados") ~ "m2",
@@ -453,7 +478,7 @@ cleaning_puntos_criticos <- function(puntos_criticos_layer, clase = c("Incendio 
     mutate(area1 = str_replace(area1, ",", ".")) %>%
     mutate(area1 = str_replace(area1, "[ ]+", ""),
            area2 = parse_number(area1)) %>%
-    mutate(class_area = ifelse(area2>500, "m2", class_area)) %>%
+    mutate(class_area = ifelse(area2>1000, "m2", class_area)) %>%
     mutate(area_metros = case_when(class_area == "m2" ~ area2,
                                    class_area == "ha" ~ area2*10000,
                                    TRUE ~ NA_real_),

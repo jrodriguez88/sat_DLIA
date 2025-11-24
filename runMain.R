@@ -89,7 +89,6 @@ par(mfrow = c(1, 5))
 map2(raster_clc_car, tags_car, ~plot_raster_clc(.x, clc_level = 2, tag = .y))
 par(mfrow = c(1, 1))
 
-
 ## Data Ingest Satelital Data ----
 # Importa datos provenientes de fuentes satelitales como NASADEM, MODIS
 # dir_satelital <- "data/interm/satelital/"
@@ -127,6 +126,9 @@ plot(socioeconomic_data_spatial[8:13])
 # plot(socioeconomic_data_spatial[8])
 
 
+## Creacion de variables basadas en distancia. crea raster de distancia a:
+source("src/calcula_raster_distancias.R")
+plot(raster_distancias_car)
 
 ## Map plot - Mapas para analisis y Plotter ----
 # Scripts para contruir mapas dinamicos par analisis de teritorio o municipio
@@ -146,6 +148,103 @@ plot(socioeconomic_data_spatial[8:13])
 
 ## Siguientes pasos :: Extraccion de datos por puntos de ocurrencia de incendios 
 # Evaluar modelos de respuesta presencia ausencia, Maxent, RF, etc 
+
+
+## Tranformacion de variables de ubicacion a variables numericasde distancia  ---- 
+#Raster based- distance
+#source()
+
+
+## Extraccion de variables por punto de ocurrencia ---
+
+# Carga la funcion de extraccion de datos de las diferentes fuentes recopiladas, 
+# (extraccion de variable por punto de ocurrencia en pixel o poligono) 
+source("src/funcion_extraccion_data_DB0.R")
+source("src/creacion_datos_entrenamiento_modelos.R")
+## Carga datos de ocurrencia de incendios
+
+ocurrencia_incendios <- read_excel("data/final/INCENDIOS_REVISED_CAR.xlsx", na = c("N/A",""))
+
+eventos_car <- prepare_data_dgoat(ocurrencia_incendios)
+plot(st_geometry(data_ocurrencias_sp),
+     pch = 16, col = "firebrick", asp = 1, axes = TRUE)
+
+
+test_data <- extrae_data_training_model(eventos_car, 
+                                        raster_distancias_car, 
+                                        rast_terrain, 
+                                        raster_coberturas = raster_clc_car[[5]],
+                                        ndvi_car, 
+                                        precipitacion, temp_max, temp_min, humedad_rel, 
+                                        socioeconomic_data_spatial, 
+                                        punto_o_vecino = "_valor") # "_vecindad"
+
+
+naniar::vis_miss(test_data)
+
+test_data1 <- test_data %>% left_join(
+  st_drop_geometry(eventos_car) %>%
+    dplyr::select(objectid = OBJECTID, 
+                  Area_Afectada)
+  
+  )
+
+naniar::gg_miss_fct(test_data1, fct = municipio)
+
+
+## Analisis Multivariado de datos
+
+
+## Generacion set data - + pseudoocurrencias ----
+# Requiere "eventos_car" # A tibble: 661 × 4 > OBJECTID Fecha Area_Afectada geometry
+source("src/generacion_pseudoocurrencias.R")
+print(tmap_arrange(map1, map2, ncol = 2))
+
+
+#base_modelo
+tictoc::tic()
+test_data_model <- extrae_data_training_model(base_modelo, 
+                                              raster_distancias_car, 
+                                              rast_terrain, 
+                                              raster_coberturas = raster_clc_car[[5]],
+                                              ndvi_car, 
+                                              precipitacion, temp_max, temp_min, humedad_rel, 
+                                              socioeconomic_data_spatial, 
+                                              punto_o_vecino = "_valor") %>%
+  left_join(st_drop_geometry(base_modelo) %>% select(cell_id, fecha = Fecha, y ))
+tictoc::toc()
+
+
+tibble(test_data_model)
+naniar::vis_miss(test_data_model)
+write_csv(test_data_model, file = "data/final/test_data_modelos.csv")
+
+
+## Inferential - Non_supervise modeling ----
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

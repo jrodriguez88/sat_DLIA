@@ -86,8 +86,8 @@ dist_urbano <- crea_raster_distance(
   resol       = 100            # 100 m
 )
 
-plot(dist_urbano, main = "Distancia (m) al casco urbano")
-lines(centro_poblados)
+# plot(dist_urbano, main = "Distancia (m) al casco urbano")
+# lines(centro_poblados)
 
 
 # Distancia a drenaje doble
@@ -100,8 +100,8 @@ dist_drenaje_doble <- crea_raster_distance(
 )
 
 
-plot(dist_drenaje_doble, main = "Distancia (m) a drenaje doble")
-lines(drenaje_doble)
+# plot(dist_drenaje_doble, main = "Distancia (m) a drenaje doble")
+# lines(drenaje_doble)
 # lines(embalses)
 # lines(jurisdiccion_car)
 
@@ -113,9 +113,9 @@ dist_areas_protegidas <- crea_raster_distance(
   resol       = 100            # 100 m
 )
 
-
-plot(dist_areas_protegidas, main = "Distancia (m) a Areas protegidas")
-lines(areas_protegidas)
+# 
+# plot(dist_areas_protegidas, main = "Distancia (m) a Areas protegidas")
+# lines(areas_protegidas)
 
 
 ## Distancia lineas electricas
@@ -128,16 +128,18 @@ dist_lineas_electricas <- crea_raster_distance(
 )
 
 
-plot(dist_lineas_electricas, main = "Distancia (m) a Lineas Electricas")
-lines(lineas_electricas)
+# plot(dist_lineas_electricas, main = "Distancia (m) a Lineas Electricas")
+# lines(lineas_electricas)
+# 
+# skimr::skim(lineas_electricas %>% st_drop_geometry())
 
 
 
 ## Distancia vias primarias
-
-vias %>% dplyr::filter(TIPO_VIA == 1) %>% st_geometry() %>% plot
-lines(centro_poblados, col = "red")
-lines(jurisdiccion_car, col = "brown")
+# 
+# vias %>% dplyr::filter(TIPO_VIA == 1) %>% st_geometry() %>% plot
+# lines(centro_poblados, col = "red")
+# lines(jurisdiccion_car, col = "brown")
 
 
 
@@ -149,9 +151,9 @@ dist_vias_primarias <- crea_raster_distance(
 )
 
 
-plot(dist_vias_primarias, main = "Distancia (m) a Vias primarias")
-lines(vias %>% dplyr::filter(TIPO_VIA == 3))
-lines(jurisdiccion_car, col = "red")
+# plot(dist_vias_primarias, main = "Distancia (m) a Vias primarias")
+# lines(vias %>% dplyr::filter(TIPO_VIA == 1))
+# lines(jurisdiccion_car, col = "red")
 
 
 ## Distancia Embalses
@@ -165,8 +167,8 @@ dist_embalses <- crea_raster_distance(
 )
 
 
-plot(dist_embalses, main = "Distancia (m) a Embalses")
-lines(embalses)
+# plot(dist_embalses, main = "Distancia (m) a Embalses")
+# lines(embalses)
 
 
 raster_distancias_car <- list(dist_urbano = dist_urbano, dist_areas_protegidas = dist_areas_protegidas,
@@ -174,8 +176,8 @@ raster_distancias_car <- list(dist_urbano = dist_urbano, dist_areas_protegidas =
      dist_embalses = dist_embalses, dist_lineas_electricas = dist_lineas_electricas) %>% 
   rast() 
 
-plot(raster_distancias_car)
+# plot(raster_distancias_car)
 
-writeRaster(raster_distancias_car, filename = "data/final/raster_distancias_car.tif", overwrite = TRUE)
+# writeRaster(raster_distancias_car, filename = "data/final/raster_distancias_car.tif", overwrite = TRUE)
 
 
