@@ -1,16 +1,25 @@
 # 1) Solo columnas numéricas
-fe_num <- test_data %>%
-  select(where(is.numeric))
+fe_num <- to_multivariado %>%
+  select(where(is.numeric)) #%>% mutate(Area_Afectada_log = log2(Area_Afectada))
 
 # 2) Quitar a mano cosas que NO quieres en PCA / clustering
 #    (IDs, coords, tiempo, códigos de clase, ángulos crudos)
-cols_quitar_manualmente <- c(
-  "objectid", "latitud", "longitud",
-  "anio", "mes", "dia_mes", "dia_semana",
-  "fin_semana", "trimestre", "bimestre", "anio_rel",
-  "cobertura", "clc_macro",
-  "orientacion", "orient_rad"
-)
+if(isTRUE(base_data)){
+  cols_quitar_manualmente <- c(
+    "objectid", "latitud", "longitud")
+  
+} else {
+  cols_quitar_manualmente <- c(
+    "objectid", "latitud", "longitud",
+    "anio", "mes", "dia_mes", "dia_semana",
+    "fin_semana", "trimestre", "bimestre", "anio_rel",
+    "cobertura", "clc_macro",
+    "orientacion", "orient_rad"
+  )
+  
+}
+
+
 
 fe_num2 <- fe_num %>%
   select(-any_of(cols_quitar_manualmente))
@@ -23,8 +32,8 @@ fe_continuas <- fe_num2 %>%
 # 4) Este es tu set para PCA y clustering
 vars_pca_cluster <- names(fe_continuas)
 
-fe_pca_cluster <- fe %>%
-  select(all_of(vars_pca_cluster))
+fe_pca_cluster <- fe_num %>%
+  select(all_of(vars_pca_cluster)) 
 
 # Revisa qué quedó
 vars_pca_cluster
@@ -107,54 +116,66 @@ X_scaled <- scale(X)
 pca_res <- prcomp(X_scaled, center = FALSE, scale. = FALSE)
 
 # Varianza explicada (scree plot)
-fviz_eig(pca_res, addlabels = TRUE, main = "Varianza explicada por componente")
-factoextra::fviz_contrib(pca_res, choice = "var", , axes = c(1:8), top = 20)
+pca_contrib_comp <- fviz_eig(pca_res, addlabels = TRUE, main = "Varianza explicada por componente")
+pca_contrib_var <- factoextra::fviz_contrib(pca_res, choice = "var", , axes = c(1:8), top = 20)
 
 # Variables (cargas y contribución)
-fviz_pca_var(
+pca_biplot_contrib <- fviz_pca_var(
   pca_res,
   col.var = "contrib",      # color según contribución
   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
-  repel = TRUE
+  repel = TRUE,
+  
+  title = "Contribucion de las variables en el PCA"
 )
 
-# Individuos en el plano PC1–PC2
-fviz_pca(
-  pca_res,
-  geom.ind = "point",
-  pointshape = 19,
-  pointsize = 2,
-  alpha.ind = 0.7,
-  title = "Individuos en el espacio PCA"
-)
+# # Individuos en el plano PC1–PC2
+# fviz_pca(
+#   pca_res,
+#   geom.ind = "point",
+#   pointshape = 19,
+#   pointsize = 2,
+#   alpha.ind = 0.7,
+#   col.var = "contrib",      # color según contribución
+#   gradient.cols = c("#00AFBB", "#E7B800", "#FC4E07"),
+#   repel = TRUE,
+#   
+#   title = "Individuos en el espacio PCA"
+# )
 
 ## 2) k-means ----
 
+
+
 # 1.1. Elbow / WSS
-fviz_nbclust(
+km_elbow <- fviz_nbclust(
   X_scaled,
   FUNcluster = kmeans,
   method     = "wss",     # Within-cluster sum of squares
   k.max      = 10
-)
+) + labs(title = "Numero Optimo de Cluster para Kmeans")
 
 # 1.2. Silhouette promedio
-fviz_nbclust(
+km_silueta <- fviz_nbclust(
   X_scaled,
   FUNcluster = kmeans,
   method     = "silhouette",
   k.max      = 10
-)
+) + labs(title = "")
 
 # 1.3. Gap Statistic
 set.seed(123)
 gap_res <- clusGap(X_scaled, FUN = kmeans, K.max = 10, B = 50)
-fviz_gap_stat(gap_res)
+km_gap <- fviz_gap_stat(gap_res) + labs(title = "")
+
+plot_Ncluster_km <- km_elbow | km_silueta | km_gap
+
+## Definir Cluster Kmeans ----
 k_opt      <- 2                   # ajusta según tu criterio
 kmeans_res <- kmeans(X_scaled, centers = k_opt, nstart = 50)
 
 # PCA coloreado por k-means
-fviz_pca_ind(
+pca_kmeans <- fviz_pca_ind(
   pca_res,
   geom.ind  = "point",
   habillage = factor(kmeans_res$cluster),
@@ -175,22 +196,29 @@ fviz_pca_ind(
 
 ## 3) Clustering jerárquico (hclust) + plot en PCA ----
 # 2.1. WSS para jerárquico
-fviz_nbclust(
+hc_elbow <- fviz_nbclust(
   X_scaled,
   FUNcluster = hcut,      # jerárquico
   method     = "wss",
   k.max      = 10
-)
+) + labs(title = "Numero Optimo de Cluster para Cluster Jerarquico")
 
 # 2.2. Silhouette para jerárquico
-fviz_nbclust(
+hc_silueta <- fviz_nbclust(
   X_scaled,
   FUNcluster = hcut,
   method     = "silhouette",
   k.max      = 10
-)
+) + labs(title = "")
 
-k_opt <- 3
+# 1.3. Gap Statistic
+set.seed(123)
+gap_res_hcl <- clusGap(X_scaled, FUN = hcut, K.max = 10, B = 50)
+hc_gap <- fviz_gap_stat(gap_res_hcl) + labs(title = "")
+
+plot_Ncluster_hc <- hc_elbow | hc_silueta | hc_gap
+
+k_opt <- 2
 
 
 dist_mat   <- dist(X_scaled, method = "euclidean")
@@ -201,8 +229,12 @@ hc_clusters <- cutree(hc_res, k = k_opt)
 plot(hc_res, labels = FALSE, main = "Clustering jerárquico (Ward.D2)")
 rect.hclust(hc_res, k = k_opt, border = "red")
 
+# Don't color labels, add rectangles
+fviz_dend(hc_res, cex = 0.5, k = 2,
+          color_labels_by_k = FALSE, rect = TRUE)
+
 # PCA coloreado por hclust
-fviz_pca_ind(
+pca_hclust <- fviz_pca_ind(
   pca_res,
   geom.ind  = "point",
   habillage = factor(hc_clusters),
@@ -221,9 +253,13 @@ fviz_pca_ind(
 
 ## 4) DBSCAN + visualización en PCA ----
 # (idealmente elegir eps con kNNdistplot antes)
-kNNdistplot(X_scaled, k = 10)#; abline(h = 1.5, col = "red", lty = 2)
+#kNNdistplot(X_scaled, k = 10); abline( = 1.5, col = "red", lty = 2)
+
+kNNdistplot(X_scaled, k = 1:20)  ; abline(h = 5, col = "red", lty = 2)
+
+
 eps_val    <- 5   # AJUSTA
-minPts_val <- 10     # típico ~ dimensión + 1
+minPts_val <- 8     # típico ~ dimensión + 1
 
 dbscan_res <- dbscan(X_scaled, eps = eps_val, minPts = minPts_val)
 table(dbscan_res$cluster) 
@@ -232,21 +268,31 @@ table(dbscan_res$cluster)
 db_labels <- ifelse(dbscan_res$cluster == 0,
                     "ruido",
                     paste0("C", dbscan_res$cluster))
-db_labels <- factor(db_labels)
+# db_labels <- factor(db_labels)
 
 # PCA coloreado por DBSCAN
-fviz_pca_ind(
+pca_dbscan <- fviz_pca_ind(
   pca_res,
   geom.ind  = "point",
-  habillage = factor(hc_clusters),
-  addEllipses = TRUE,
+  habillage = factor(db_labels),
+  addEllipses = FALSE,
   title = "PCA – clusters DBSCAN (ruido vs grupos)"
 )
+
+# labels_db <- ifelse(dbscan_res$cluster == 0, "ruido", paste0("C", dbscan_res$cluster))
+# 
+# fviz_pca_ind(
+#   pca_res,
+#   habillage = factor(labels_db),
+#   geom.ind  = "point",
+#   addEllipses = TRUE,
+#   title = "PCA + DBSCAN"
+# )
 
 
 
 ## 5) Opcional: pegar clusters a la tabla original ----
-fe_clusters <- fe %>%
+fe_clusters <- to_multivariado %>%
   mutate(
     cluster_kmeans = NA_integer_,
     cluster_hclust = NA_integer_,
@@ -256,32 +302,31 @@ fe_clusters <- fe %>%
 fe_clusters$cluster_kmeans[rows_complete] <- kmeans_res$cluster
 fe_clusters$cluster_hclust[rows_complete] <- hc_clusters
 fe_clusters$cluster_dbscan[rows_complete] <- as.character(db_labels)
+
+
 # 
-# ggplot() +
-#   geom_sf(data = juris_proj, fill = NA, color = "black") +
-#   geom_point(data = fe_clusters,
-#              aes(x = longitud, y = latitud, color = factor(cluster_kmeans)),
-#              size = 1.5) +
-#   theme_minimal()
+map_kmeans <- ggplot() +
+  geom_sf(data = juris_proj, fill = NA, color = "black") +
+  geom_point(data = fe_clusters,
+             aes(x = longitud, y = latitud, color = factor(cluster_kmeans)),
+             size = 1.5) +
+  theme_minimal()
+
+map_hclust <- ggplot() +
+  geom_sf(data = juris_proj, fill = NA, color = "black") +
+  geom_point(data = fe_clusters,
+             aes(x = longitud, y = latitud, color = factor(cluster_hclust)),
+             size = 1.5) +
+  theme_minimal()
+
+map_dbscan <- ggplot() +
+  geom_sf(data = juris_proj, fill = NA, color = "black") +
+  geom_point(data = fe_clusters,
+             aes(x = longitud, y = latitud, color = factor(cluster_dbscan)),
+             size = 1.5) +
+  theme_minimal()
 # 
-# ggplot(fe_clusters, aes(longitud, latitud, color = factor(cluster_hclust))) +
-#   geom_point()
-# 
-# ggplot(fe_clusters, aes(longitud, latitud, color = factor(cluster_dbscan))) +
-#   geom_point() +
-#   g(jurisdiccion_car, inherit.aes = FALSE)
-# 
-# # fe_clusters ahora tiene los labels de cluster para análisis posteriores
-# 
-# jurisdiccion_car
-# 
-# ggplot() +
-#   geom_sf(data = juris_proj, fill = NA, color = "black") +
-#   geom_point(data = fe_clusters,
-#              aes(x = longitud, y = latitud, color = factor(cluster_hclust)),
-#              size = 1.5) +
-#   theme_minimal()
-# 
+
 # ggplot() +
 #   geom_spatraster(data = elevacion_car) +
 #   scale_fill_viridis_c(option = "terrain", name = "Elevación (m)") +
@@ -290,6 +335,19 @@ fe_clusters$cluster_dbscan[rows_complete] <- as.character(db_labels)
 #              aes(x = longitud, y = latitud, color = factor(cluster_hclust)),
 #              size = 1.5) +
 #   theme_minimal()
+
+
+# Analisis PCA
+(pca_biplot_contrib | pca_contrib_comp  / pca_contrib_var )
+
+print(plot_Ncluster_km)
+print(plot_Ncluster_hc)
+kNNdistplot(X_scaled, k = 1:20)  ; abline(h = 5, col = "red", lty = 2)
+
+
+(pca_kmeans | pca_hclust | pca_dbscan) 
+
+
 
 
 par(mfrow = c(1, 3))

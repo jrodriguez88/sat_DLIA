@@ -25,6 +25,7 @@ library(tmap)      # mapeo temático
 library(grid) 
 library(htmlwidgets)
 library(hms)
+library(patchwork)
 
 # Modeling and Machine Learning 
 library(tidymodels)

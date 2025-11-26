@@ -166,7 +166,7 @@ source("src/creacion_datos_entrenamiento_modelos.R")
 ocurrencia_incendios <- read_excel("data/final/INCENDIOS_REVISED_CAR.xlsx", na = c("N/A",""))
 
 eventos_car <- prepare_data_dgoat(ocurrencia_incendios)
-plot(st_geometry(data_ocurrencias_sp),
+plot(st_geometry(eventos_car),
      pch = 16, col = "firebrick", asp = 1, axes = TRUE)
 
 
@@ -182,17 +182,32 @@ test_data <- extrae_data_training_model(eventos_car,
 
 naniar::vis_miss(test_data)
 
-test_data1 <- test_data %>% left_join(
+test_data <- test_data %>% left_join(
   st_drop_geometry(eventos_car) %>%
     dplyr::select(objectid = OBJECTID, 
-                  Area_Afectada)
-  
-  )
+                  Area_Afectada))
 
-naniar::gg_miss_fct(test_data1, fct = municipio)
-
+naniar::gg_miss_fct(test_data, fct = municipio)
+write_csv(test_data, "data/final/test_data.csv")
 
 ## Analisis Multivariado de datos
+base_data <- TRUE
+to_multivariado <- test_data
+
+## Revisar "src/EDA_FE_test_data ----
+source("src/EDA_FE_test_data.R")
+cat("\nPerfil de clúster (medianas):\n"); print(cluster_profile)
+
+## Realiza analisis PCA y compara metodos Cluster (Kmeans, HClust, DBSCAN)
+source("src/Analisis_Multivariado_PCA_Cluster.R")
+
+
+## Opcion 2 - Full Feature Engineering
+# source("src/Feature_Engineering_CAR.R")
+
+
+# to_multivariado <- fe_output$features_full
+# source("src/Analisis_Multivariado_PCA_Cluster.R")
 
 
 ## Generacion set data - + pseudoocurrencias ----
@@ -219,9 +234,50 @@ tibble(test_data_model)
 naniar::vis_miss(test_data_model)
 write_csv(test_data_model, file = "data/final/test_data_modelos.csv")
 
+to_multivariado <- test_data_model
+source("src/Analisis_Multivariado_PCA_Cluster.R")
+(pca_biplot_contrib | pca_contrib_comp  / pca_contrib_var )
 
-## Inferential - Non_supervise modeling ----
+## Prepara Datos para RandomForest
+source("src/data_to_modeling_RF.R")
+print(fe)
 
+
+## Prototipo RandomForest - Training + Testing
+source("src/Prototipo_RandomForest_CAR.R")
+rf_fit
+vip(rf_fit, num_features = 20)
+yardstick::f_meas(rf_preds, y, .pred_class)
+
+
+## Mapas probabilidad de Ocurrencia de Incendios ----
+factor_resol <- 10  # pixeles de 1000
+source("src/mapas_prob_incendios_RandomForest.R")
+list(static_stack,
+prcp_clim_res,
+tmax_clim_res,
+tmin_clim_res,
+rh_clim_res,
+ndvi_clim_res) %>% 
+  map(plot)
+
+
+prob_stack %>% 
+  terra::mask(jurisdiccion_car) %>% 
+  setNames(month.abb) %>% 
+  plot(col=colorRampPalette(c("darkgreen", "yellow", "red"))(255))
+
+prob_class %>% 
+  terra::mask(jurisdiccion_car) %>% 
+  setNames(month.abb) %>% 
+  plot(col = cols4)
+
+prob_class_fac %>%
+  terra::mask(jurisdiccion_car) %>%
+  setNames(month.abb) %>%
+  plot(col = cols4)
+
+plot(prob_stack < 0.7)
 
 
 
