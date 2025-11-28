@@ -72,6 +72,7 @@ grafico_area_eventos
 # Importa y genera rasters de combustible de la base de datos de pettinari 2015 
 # https://doi.pangaea.de/10.1594/PANGAEA.849808
 dir_combustible <- "data/interm/combustible/"
+# descarga_fuente <- FALSE
 source("src/ingest_layer_combustible.R")
 par(mfrow = c(2, 2))
 map2(raster_combust, names(params_df)[c(2, 4:67)], ~plot(.x, main=.y, type="classes"))
